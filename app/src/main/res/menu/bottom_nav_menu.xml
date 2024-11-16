@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/homeFragment"
+        android:icon="@drawable/home"
+        android:title="Home" />
+    <item
+        android:id="@+id/mapFragment"
+        android:icon="@drawable/map"
+        android:title="Map" />
+    <item
+        android:id="@+id/expressFragment"
+        android:icon="@drawable/plus"
+        android:title="" />
+    <item
+        android:id="@+id/chatbotFragment"
+        android:icon="@drawable/chat"
+        android:title="Chatbot" />
+    <item
+        android:id="@+id/profileFragment"
+        android:icon="@drawable/profile"
+        android:title="Profile" />
+</menu>

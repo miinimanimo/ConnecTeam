@@ -1,58 +1,21 @@
 package com.example.moodly
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            MainScreen()
-        }
-    }
-}
+        setContentView(R.layout.activity_main)
 
-@Composable
-fun MainScreen() {
-    val navController = rememberNavController()
-    var selectedItem = remember { "Home" }
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navController = navHostFragment.navController
 
-    Scaffold(
-        bottomBar = {
-            BottomNavigationBar(
-                selectedItem = selectedItem,
-                onItemSelected = {
-                    selectedItem = it
-                    when (it) {
-                        "Home" -> navController.navigate("home")
-                        "Map" -> navController.navigate("map")
-                        "Add" -> navController.navigate("add")
-                        "Chatbot" -> navController.navigate("chatbot")
-                        "Profile" -> navController.navigate("profile")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = "home",
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable("home") { HomeScreen() }
-            composable("map") { MapScreen() }
-            composable("add") { AddScreen() }
-            composable("chatbot") { ChatbotScreen() }
-            composable("profile") { ProfileScreen() }
-        }
+        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation_view)
+        bottomNavigationView.setupWithNavController(navController)
     }
 }
