@@ -17,7 +17,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="start"
             android:layout_marginBottom="16dp"
-            android:background="#FFFFFF"
+            android:background="#fef7ff"
             android:src="@drawable/back_button"
             android:contentDescription="Back Button" />
 
@@ -145,8 +145,11 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
             android:background="@drawable/insertphoto_button"
             android:text="Insert Photo"
+            android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:textSize="18sp" />
         <!-- ImageView to display selected photo -->
@@ -201,7 +204,9 @@
             android:layout_height="wrap_content"
             android:background="@drawable/save_button"
             android:textColor="#FFFFFF"
+            android:textAllCaps="false"
             android:text="Save"
+            android:textSize="18sp"
             android:layout_marginTop="16dp"/>
 
     </LinearLayout>
