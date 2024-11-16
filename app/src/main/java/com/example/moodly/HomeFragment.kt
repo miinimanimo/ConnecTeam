@@ -1,5 +1,6 @@
 package com.example.moodly
 
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,7 +11,9 @@ import com.example.moodly.databinding.FragmentHomeBinding
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.TextStyle
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class HomeFragment : Fragment() {
 
@@ -39,6 +42,11 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.action_homeFragment_to_expressFragment)
         }
 
+        // calendarHeader 클릭 시 월과 연도를 선택하는 다이얼로그 표시
+        binding.calendarHeader.setOnClickListener {
+            showMonthYearPickerDialog()
+        }
+
         // 달력 초기화
         setupCalendar()
     }
@@ -47,7 +55,36 @@ class HomeFragment : Fragment() {
         // 현재 날짜를 "일 월 년" 형식으로 표시
         val currentDate = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault()).format(Date())
         binding.calendarHeader.text = currentDate
+    }
 
+    private fun showMonthYearPickerDialog() {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+
+        // DatePickerDialog 생성
+        val datePickerDialog = DatePickerDialog(
+            requireContext(),
+            { _, selectedYear, selectedMonth, _ ->
+                // 선택된 월과 연도를 기반으로 CalendarView 업데이트
+                updateCalendarWithSelectedDate(selectedYear, selectedMonth)
+            },
+            year, month, 1 // day는 임의로 설정
+        )
+
+        // 날짜(day) 부분 숨기기
+        datePickerDialog.datePicker.findViewById<View>(
+            resources.getIdentifier("day", "id", "android")
+        )?.visibility = View.GONE
+
+        datePickerDialog.show()
+    }
+
+    private fun updateCalendarWithSelectedDate(year: Int, month: Int) {
+        // CalendarView의 날짜를 업데이트
+        val calendar = Calendar.getInstance()
+        calendar.set(year, month, 1) // 월의 첫 날로 설정
+        binding.calendarView.date = calendar.timeInMillis
     }
 
     private fun setupCalendar() {
