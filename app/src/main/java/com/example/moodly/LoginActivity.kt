@@ -1,33 +1,67 @@
 package com.example.moodly
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
-import com.example.moodly.databinding.ActivityLoginBinding
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class LoginActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityLoginBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_login)
 
-        // 로그인 버튼 클릭 시
-        binding.loginButton.setOnClickListener {
-            // 로그인 성공 로직 처리
-            val isSuccess = performLogin() // 사용자 인증 함수
-            if (isSuccess) {
-                // 로그인 성공 시 MainActivity로 이동
-                startActivity(Intent(this, MainActivity::class.java))
-                finish() // 현재 로그인 Activity 종료
-            }
+        // 로그인 버튼 클릭 리스너 설정
+        findViewById<View>(R.id.loginButton).setOnClickListener {
+            val email = findViewById<EditText>(R.id.emailEditText).text.toString()
+            val password = findViewById<EditText>(R.id.passwordEditText).text.toString()
+            loginUser(email, password)
         }
     }
 
-    private fun performLogin(): Boolean {
-        // 로그인 검증 로직 추가 (예: 서버 요청, 입력값 검증 등)
-        return true
+    private fun loginUser(email: String, password: String) {
+        val credentials = LoginCredentials(email, password)
+
+        val authApiService = RetrofitClient.instance
+        authApiService.login(credentials).enqueue(object : Callback<LoginResponse> {
+            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+                if (response.isSuccessful) {
+                    val accessToken = response.body()?.token?.access // access 토큰을 가져옴
+                    if (accessToken != null) {
+                        // 토큰을 SharedPreferences에 저장
+                        saveToken(accessToken)
+                        // MainActivity로 이동
+                        navigateToMainActivity()
+                    }
+                } else {
+                    Log.e("Login", "로그인 실패: ${response.errorBody()?.string()}")
+                }
+            }
+
+            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                Log.e("Login", "요청 실패: ${t.message}")
+            }
+        })
     }
 
+    private fun saveToken(token: String) {
+        val sharedPreferences = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+        with(sharedPreferences.edit()) {
+            putString("jwt_token", token)
+            apply()
+        }
+    }
+
+    private fun navigateToMainActivity() {
+        // MainActivity로 이동
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        finish() // 현재 Activity 종료
+    }
 }
