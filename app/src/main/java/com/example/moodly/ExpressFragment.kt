@@ -159,15 +159,7 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
         )
 
         for (checkBox in checkBoxes) {
-            checkBox.setOnCheckedChangeListener { _, isChecked ->
-                // 다른 체크박스들은 모두 해제
-                if (isChecked) {
-                    for (otherCheckBox in checkBoxes) {
-                        if (otherCheckBox != checkBox) {
-                            otherCheckBox.isChecked = false
-                        }
-                    }
-                }
+            checkBox.setOnCheckedChangeListener { _, _ ->
                 // 선택된 감정을 emotionTextView에 반영
                 emotionTextView.text = "In a ${getSelectedEmotion()} moment..."
             }
@@ -237,15 +229,19 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
 
     // 선택된 감정 반환
     private fun getSelectedEmotion(): String {
-        val selectedEmotion = when {
-            feelingHappy.isChecked -> "Happy"
-            feelingExcited.isChecked -> "Excited"
-            feelingSad.isChecked -> "Sad"
-            feelingAngry.isChecked -> "Angry"
-            feelingTired.isChecked -> "Tired"
-            else -> "Neutral"
+        val selectedEmotions = mutableListOf<String>()
+
+        if (feelingHappy.isChecked) selectedEmotions.add("Happy")
+        if (feelingExcited.isChecked) selectedEmotions.add("Excited")
+        if (feelingSad.isChecked) selectedEmotions.add("Sad")
+        if (feelingAngry.isChecked) selectedEmotions.add("Angry")
+        if (feelingTired.isChecked) selectedEmotions.add("Tired")
+
+        return if (selectedEmotions.isNotEmpty()) {
+            selectedEmotions.joinToString(", ") // 쉼표로 감정을 구분
+        } else {
+            "Neutral" // 아무것도 선택되지 않은 경우
         }
-        return selectedEmotion
     }
 
     // 음성 인식 시작
