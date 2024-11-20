@@ -2,10 +2,12 @@ package com.example.moodly
 
 import android.Manifest
 import android.app.AlertDialog
-import android.app.DatePickerDialog
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -27,12 +29,10 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.example.moodly.databinding.FragmentExpressBinding
-import java.text.SimpleDateFormat
-import java.util.Calendar
+import com.google.android.material.snackbar.Snackbar
+import androidx.navigation.fragment.findNavController
 import java.util.Locale
 
 class ExpressFragment : Fragment(R.layout.fragment_express) {
@@ -45,7 +45,8 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
     private lateinit var backButton: ImageButton
     private lateinit var titleEditText: EditText
     private lateinit var imageView: ImageView
-    private lateinit var dateEditText: EditText
+
+    // private lateinit var dateEditText: EditText
     private lateinit var textEditText: EditText
     private lateinit var insertPhotoButton: Button
     private lateinit var photoViewLayout: LinearLayout
@@ -59,6 +60,7 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
     private lateinit var emotionTextView: TextView
     private lateinit var feelingHappy: CheckBox
     private lateinit var feelingExcited: CheckBox
+    private lateinit var feelingSoso: CheckBox
     private lateinit var feelingSad: CheckBox
     private lateinit var feelingAngry: CheckBox
     private lateinit var feelingTired: CheckBox
@@ -67,12 +69,44 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
 
 
     // 변수: 이미지 선택을 위한 Intent
-    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            photoViewLayout.visibility = View.VISIBLE
-            photoImageView.setImageURI(uri)
+    private val pickImage =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                photoViewLayout.visibility = View.VISIBLE
+                photoImageView.setImageURI(uri)
+            }
         }
-    }
+
+    // 갤러리에서 이미지 선택
+    private val pickImageLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            photoUri = uri
+            imageView.setImageURI(photoUri)
+            photoViewLayout.visibility = View.VISIBLE
+        }
+
+    // 사진 촬영 후 이미지 URI 처리
+    private val takePictureLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success) {
+                imageView.setImageURI(photoUri)
+                photoViewLayout.visibility = View.VISIBLE
+
+                // URI를 Bitmap으로 변환하여 Bundle에 전달
+                val bitmap = getBitmapFromUri(photoUri)
+            }
+        }
+
+    // 카메라 권한 요청
+    private val requestCameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                takePhoto()
+            } else {
+                Toast.makeText(requireContext(), "Camera permission denied", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -82,8 +116,8 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
 
         // 뷰 요소들 찾기
         backButton = view.findViewById(R.id.myVectorImageView)
-        titleEditText = view.findViewById(R.id.title_editText)
-        dateEditText = view.findViewById(R.id.dateEditText)
+        titleEditText = view.findViewById(R.id.titleEditText)
+        // dateEditText = view.findViewById(R.id.dateEditText)
 
         textEditText = view.findViewById(R.id.textEditText)
         imageView = view.findViewById(R.id.photoImageView)
@@ -96,6 +130,7 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
         emotionTextView = view.findViewById(R.id.emotionTextView)
         feelingHappy = view.findViewById(R.id.feelingHappy)
         feelingExcited = view.findViewById(R.id.feelingExcited)
+        feelingSoso = view.findViewById(R.id.feelingSoso)
         feelingSad = view.findViewById(R.id.feelingSad)
         feelingAngry = view.findViewById(R.id.feelingAngry)
         feelingTired = view.findViewById(R.id.feelingTired)
@@ -116,7 +151,11 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
                 Toast.makeText(requireContext(), "Record stopped.", Toast.LENGTH_SHORT).show()
             } else {
                 // 권한이 없으면 권한 요청
-                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(
+                        requireContext(),
+                        Manifest.permission.RECORD_AUDIO
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
                     requestRecordAudioPermission.launch(Manifest.permission.RECORD_AUDIO)
                 } else {
                     // 권한이 이미 허용되었으면 음성 인식 시작
@@ -134,28 +173,31 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
 
         // 음성 인식 Intent 설정
         speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-        speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        speechRecognizerIntent.putExtra(
+            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+        )
         speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
 
-        // 날짜 선택 DatePickerDialog
-        dateEditText.setOnClickListener {
-            val calendar = Calendar.getInstance()
-            val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH)
-            val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-            val datePickerDialog = DatePickerDialog(requireActivity(), { _, selectedYear, selectedMonth, selectedDay ->
-                calendar.set(selectedYear, selectedMonth, selectedDay)
-                val dateFormat = SimpleDateFormat("MMM dd yyyy", Locale.getDefault())
-                dateEditText.setText(dateFormat.format(calendar.time))
-            }, year, month, day)
-
-            datePickerDialog.show()
-        }
+//        // 날짜 선택 DatePickerDialog
+//        dateEditText.setOnClickListener {
+//            val calendar = Calendar.getInstance()
+//            val year = calendar.get(Calendar.YEAR)
+//            val month = calendar.get(Calendar.MONTH)
+//            val day = calendar.get(Calendar.DAY_OF_MONTH)
+//
+//            val datePickerDialog = DatePickerDialog(requireActivity(), { _, selectedYear, selectedMonth, selectedDay ->
+//                calendar.set(selectedYear, selectedMonth, selectedDay)
+//                val dateFormat = SimpleDateFormat("MMM dd yyyy", Locale.getDefault())
+//                dateEditText.setText(dateFormat.format(calendar.time))
+//            }, year, month, day)
+//
+//            datePickerDialog.show()
+//        }
 
         // 감정 체크박스 설정
         val checkBoxes = listOf(
-            feelingHappy, feelingExcited, feelingSad, feelingAngry, feelingTired
+            feelingHappy, feelingExcited, feelingSad, feelingSoso, feelingAngry, feelingTired
         )
 
         for (checkBox in checkBoxes) {
@@ -192,7 +234,7 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
         )
         brightnessSeekBar.progress = currentBrightness
 
-        // 권한 체크
+        // 밝기 조절 권한 체크
         if (!Settings.System.canWrite(requireContext())) {
             // 권한 요청
             val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
@@ -217,11 +259,46 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
         })
 
 
-
         // 저장 버튼
+        // express 프레그먼트의 저장 버튼
         val saveButton: Button = view.findViewById(R.id.saveButton)
         saveButton.setOnClickListener {
-            Toast.makeText(requireContext(), "Emotion saved!", Toast.LENGTH_SHORT).show()
+            // EditText에서 다이어리 내용과 제목 가져오기
+            val diaryTitle = titleEditText.text.toString()  // 제목 입력 EditText
+            val diaryContent = textEditText.text.toString()  // 내용 입력 EditText
+            val diaryEmotion = emotionTextView.text.toString() // 감정 TextView
+
+            val drawable = photoImageView.drawable
+
+            // drawable을 Bitmap으로 변환
+            val bitmap = (drawable as? BitmapDrawable)?.bitmap
+
+
+            // 제목과 내용이 비어있는지 확인
+            if (diaryTitle.isEmpty() || diaryContent.isEmpty()) {
+                Snackbar.make(
+                    requireView(),
+                    "Title and content cannot be empty!",
+                    Snackbar.LENGTH_SHORT
+                ).setAction("OK") {
+                    // OK 버튼 클릭 시 동작 (필요 없으면 비워둠)
+                }.show()
+                return@setOnClickListener
+            }
+
+            // Bundle로 다이어리 제목과 내용을 전달
+            val bundle = Bundle()
+            bundle.putString("diaryTitle", diaryTitle)
+            bundle.putString("diaryEmotion", diaryEmotion)
+            bundle.putString("diaryContent", diaryContent)
+            bundle.putParcelable("diaryImage", bitmap)
+
+            // SavedDiaryFragment로 이동
+            findNavController().navigate(R.id.action_expressFragment_to_savedDiaryFragment, bundle)
+
+            // 스낵바 표시
+            Snackbar.make(requireView(), "Diary saved successfully!", Snackbar.LENGTH_SHORT).setAction("OK"){
+            }.show()
         }
         return view
     }
@@ -233,6 +310,7 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
 
         if (feelingHappy.isChecked) selectedEmotions.add("Happy")
         if (feelingExcited.isChecked) selectedEmotions.add("Excited")
+        if (feelingSoso.isChecked) selectedEmotions.add("Soso")
         if (feelingSad.isChecked) selectedEmotions.add("Sad")
         if (feelingAngry.isChecked) selectedEmotions.add("Angry")
         if (feelingTired.isChecked) selectedEmotions.add("Tired")
@@ -263,13 +341,15 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
     }
 
     // 음성 인식 권한 요청
-    private val requestRecordAudioPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            startSpeechRecognition() // 권한 허용 시 음성 인식 시작
-        } else {
-            Toast.makeText(requireContext(), "Audio permission denied", Toast.LENGTH_SHORT).show()
+    private val requestRecordAudioPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                startSpeechRecognition() // 권한 허용 시 음성 인식 시작
+            } else {
+                Toast.makeText(requireContext(), "Audio permission denied", Toast.LENGTH_SHORT)
+                    .show()
+            }
         }
-    }
 
     // 음성 인식 리스너 설정
     private val recognitionListener = object : RecognitionListener {
@@ -301,7 +381,11 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
 
     // 카메라 권한 요청 및 촬영
     private fun checkCameraPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         } else {
             // 사진 촬영 전 URI 생성
@@ -309,7 +393,8 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
             if (photoUri != null) {
                 takePhoto()
             } else {
-                Toast.makeText(requireContext(), "Failed to create image URI", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Failed to create image URI", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
@@ -339,31 +424,6 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
         }
     }
 
-    // 카메라 권한 요청
-    private val requestCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            takePhoto()
-        } else {
-            Toast.makeText(requireContext(), "Camera permission denied", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // 갤러리에서 이미지 선택
-    private val pickImageLauncher =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            photoUri = uri
-            imageView.setImageURI(photoUri)
-            photoViewLayout.visibility = View.VISIBLE
-        }
-
-    // 사진 촬영 후 이미지 URI 처리
-    private val takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) {
-            imageView.setImageURI(photoUri)
-            photoViewLayout.visibility = View.VISIBLE
-        }
-    }
-
 
     //밝기 설정 권한
     private fun requestWriteSettingsPermission() {
@@ -389,7 +449,11 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
 
             // SeekBar 이벤트 리스너 설정
             seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
                     // 퍼센트 계산 및 레이블 업데이트
                     val percentage = (progress.toFloat() / 255 * 100).toInt()
                     label.text = "Mood Brightness: $percentage%"
@@ -416,5 +480,14 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
         } else {
             requestWriteSettingsPermission()
         }
+    }
+
+    // URI로부터 Bitmap을 변환하는 함수
+    private fun getBitmapFromUri(uri: Uri?): Bitmap? {
+        uri?.let {
+            val inputStream = requireContext().contentResolver.openInputStream(it)
+            return BitmapFactory.decodeStream(inputStream)
+        }
+        return null
     }
 }

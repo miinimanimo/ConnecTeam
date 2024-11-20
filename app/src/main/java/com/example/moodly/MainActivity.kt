@@ -25,12 +25,15 @@ class MainActivity : AppCompatActivity() {
 
         // NavController에 addOnDestinationChangedListener를 추가하여 프래그먼트 이동 시 동작 처리
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            if (destination.id == R.id.expressFragment) {
-                // ExpressFragment로 이동 시 Bottom Navigation 숨기기
-                binding.bottomNavigationView.visibility = View.GONE
-            } else {
-                // 다른 프래그먼트로 이동 시 Bottom Navigation 보이기
-                binding.bottomNavigationView.visibility = View.VISIBLE
+            when (destination.id) {
+                R.id.expressFragment, R.id.savedDiaryFragment -> {
+                    // 숨겨야 할 프래그먼트
+                    binding.bottomNavigationView.visibility = View.GONE
+                }
+                else -> {
+                    // 그 외의 프래그먼트에서는 네비게이션 바를 표시
+                    binding.bottomNavigationView.visibility = View.VISIBLE
+                }
             }
         }
     }
