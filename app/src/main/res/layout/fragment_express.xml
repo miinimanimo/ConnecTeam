@@ -1,7 +1,7 @@
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- ScrollView 내부에 하나의 LinearLayout 사용 -->
     <LinearLayout
@@ -23,7 +23,7 @@
 
         <!-- 제목 입력 EditText -->
         <EditText
-            android:id="@+id/title_editText"
+            android:id="@+id/titleEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
@@ -34,7 +34,7 @@
             android:textSize="16sp" />
 
         <!-- 날짜 선택 EditText -->
-        <EditText
+        <!-- <EditText
             android:id="@+id/dateEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -45,7 +45,7 @@
             android:hint="Select a Date"
             android:padding="16dp"
             android:textColor="#000000"
-            android:textSize="16sp" />
+            android:textSize="16sp" /> -->
 
         <!-- 텍스트 입력 EditText -->
         <EditText
@@ -111,6 +111,15 @@
                 android:textSize="16sp" />
 
             <CheckBox
+                android:id="@+id/feelingSoso"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:text="Soso 😶"
+                android:textColor="#000000"
+                android:textSize="16sp" />
+
+            <CheckBox
                 android:id="@+id/feelingSad"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -161,11 +170,25 @@
             android:layout_height="wrap_content"
             android:visibility="gone">
 
-            <ImageView
-                android:id="@+id/photoImageView"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:src="@drawable/ic_launcher_background" />
+            <androidx.cardview.widget.CardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <ImageView
+                    android:id="@+id/photoImageView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_gravity="center"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="Diary Image"/>
+            </androidx.cardview.widget.CardView>
         </LinearLayout>
 
         <LinearLayout

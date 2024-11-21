@@ -1,15 +1,19 @@
 package com.example.moodly
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.moodly.databinding.FragmentHomeBinding
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.TextStyle
+import androidx.navigation.NavOptions
 import java.util.*
 
 class HomeFragment : Fragment() {
@@ -41,6 +45,11 @@ class HomeFragment : Fragment() {
 
         // 달력 초기화
         setupCalendar()
+
+        // 메뉴 버튼 클릭 이벤트 추가
+        binding.menuButton.setOnClickListener {
+            showPopupMenu(it)
+        }
     }
 
     private fun setCalendarHeader() {
@@ -67,5 +76,46 @@ class HomeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun showPopupMenu(anchor: View) {
+        val popupMenu = PopupMenu(requireContext(), anchor)
+        popupMenu.menuInflater.inflate(R.menu.popup_menu, popupMenu.menu)
+
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.menu_profile -> {
+                    // 프로필 이동 처리
+                    val navController = findNavController()
+
+                    // NavOptions 정의
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(R.id.homeFragment, true)  // HomeFragment를 popUpTo로 스택에서 제거
+                        .setLaunchSingleTop(true)             // 중복된 프래그먼트 방지
+                        .build()
+
+                    // 네비게이션 수행
+                    navController.navigate(R.id.action_homeFragment_to_profileFragment, null, navOptions)
+                    true
+                }
+                R.id.menu_logout -> {
+                    findNavController().navigate(R.id.action_homeFragment_to_loginActivity)
+                    // 로그아웃 처리 (예시: 메시지 표시)
+                    Toast.makeText(requireContext(), "Logged out.", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.menu_contact -> {
+                    // 회사 Contact 정보 표시
+                    AlertDialog.Builder(requireContext())
+                        .setTitle("회사 Contact")
+                        .setMessage("contact@company.com")
+                        .setPositiveButton("확인", null)
+                        .show()
+                    true
+                }
+                else -> false
+            }
+        }
+        popupMenu.show()
     }
 }

@@ -34,8 +34,37 @@
         android:label="Profile"
         tools:layout="@layout/fragment_profile" />
 
+    <fragment
+        android:id="@+id/savedDiaryFragment"
+        android:name="com.example.moodly.SavedDiaryFragment"
+        android:label="SavedDiary"
+        tools:layout="@layout/fragment_saved_diary" />
+
+    <activity
+        android:id="@+id/loginActivity"
+        android:name="com.example.moodly.LoginActivity"
+        android:label="Login"
+        tools:layout="@layout/activity_login"/>
+
     <action
         android:id="@+id/action_homeFragment_to_expressFragment"
         app:destination="@id/expressFragment" />
 
+    <action
+        android:id="@+id/action_homeFragment_to_profileFragment"
+        app:destination="@id/profileFragment" />
+
+    <action
+        android:id="@+id/action_homeFragment_to_loginActivity"
+        app:destination="@id/loginActivity" />
+
+    <action
+        android:id="@+id/action_expressFragment_to_savedDiaryFragment"
+        app:destination="@id/savedDiaryFragment" />
+
+    <action
+        android:id="@+id/action_savedDiaryFragment_to_homeFragment"
+        app:destination="@id/homeFragment" />
+
 </navigation>
+
