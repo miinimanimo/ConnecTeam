@@ -51,8 +51,26 @@
             android:id="@+id/passwordEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Password"
+            android:hint="Insert your password"
             android:inputType="textPassword"
+            android:layout_marginTop="8dp" />
+
+        <!-- 비밀번호 확인 -->
+        <EditText
+            android:id="@+id/passwordCheckEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Insert your password again"
+            android:inputType="textPassword"
+            android:layout_marginTop="8dp" />
+
+        <!-- 핸드폰 번호 입력 -->
+        <EditText
+            android:id="@+id/phoneNumEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Insert your phone number"
+            android:inputType="phone"
             android:layout_marginTop="8dp" />
 
         <!-- 이메일 입력 -->
@@ -60,7 +78,7 @@
             android:id="@+id/emailEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email"
+            android:hint="Insert your email"
             android:inputType="textEmailAddress"
             android:layout_marginTop="8dp" />
 
@@ -72,38 +90,44 @@
             android:gravity="center"
             android:layout_marginTop="16dp">
 
-            <!-- 년 선택 버튼 -->
-            <android.widget.Button
-                android:id="@+id/yearButton"
+            <!-- 년 선택스피너 -->
+            <Spinner
+                android:id="@+id/yearSpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Year"
                 android:textColor="@android:color/darker_gray"
                 android:background="@drawable/ymd_button"
+                android:popupBackground="@color/white"
+                android:textAlignment="center"
                 android:layout_marginEnd="8dp"
                 app:layout_constraintWidth_percent="0.3"
                 android:minHeight="48dp"/>
 
-            <!-- 월 선택 버튼 -->
-            <android.widget.Button
-                android:id="@+id/monthButton"
+            <!-- 월 선택 스피너 -->
+            <Spinner
+                android:id="@+id/monthSpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Month"
                 android:textColor="@android:color/darker_gray"
                 android:background="@drawable/ymd_button"
+                android:popupBackground="@color/white"
+                android:textAlignment="center"
                 android:layout_marginEnd="8dp"
                 app:layout_constraintWidth_percent="0.3"
                 android:minHeight="48dp"/>
 
-            <!-- 일 선택 버튼 -->
-            <android.widget.Button
-                android:id="@+id/dayButton"
+            <!-- 일 선택 스피너 -->
+            <Spinner
+                android:id="@+id/daySpinner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Date"
                 android:textColor="@android:color/darker_gray"
                 android:background="@drawable/ymd_button"
+                android:popupBackground="@color/white"
+                android:textAlignment="center"
                 app:layout_constraintWidth_percent="0.3"
                 android:minHeight="48dp"/>
         </LinearLayout>

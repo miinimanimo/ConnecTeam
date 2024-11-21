@@ -1,12 +1,11 @@
 package com.example.moodly
 
-import android.app.AlertDialog
-import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import com.example.moodly.databinding.FragmentSignUpBinding
 import java.util.*
@@ -16,9 +15,6 @@ class SignUpFragment : Fragment() {
     private var _binding: FragmentSignUpBinding? = null
     private val binding get() = _binding!!
 
-    private var selectedYear = 2024
-    private var selectedMonth = 1
-    private var selectedDay = 1
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,50 +26,27 @@ class SignUpFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        _binding = FragmentSignUpBinding.bind(view)
 
-        // 년, 월, 일 선택 버튼 클릭 리스너 설정
-        binding.yearButton.setOnClickListener { showYearPicker() }
-        binding.monthButton.setOnClickListener { showMonthPicker() }
-        binding.dayButton.setOnClickListener { showDayPicker() }
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        val yearRange = (currentYear downTo currentYear - 100).map { it.toString() }
+        val monthRange = (1..12).map { it.toString() }
+        val dayRange = (1..31).map { it.toString() }
+
+        // 각각의 스피너에 대해 defaultText를 전달하여 초기값을 설정
+        setupSpinner(binding.yearSpinner, yearRange, "Year")
+        setupSpinner(binding.monthSpinner, monthRange, "Month")
+        setupSpinner(binding.daySpinner, dayRange, "Date")
     }
 
-    private fun showYearPicker() {
-        val years = (1900..2024).toList()
-        val yearList = years.map { it.toString() }.toTypedArray()
+    private fun setupSpinner(spinner: Spinner, data: List<String>, defaultText: String) {
+        // 기본값을 표시할 항목 추가
+        val items = listOf(defaultText) + data
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, items)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
 
-        AlertDialog.Builder(requireContext())
-            .setTitle("Select Year")
-            .setItems(yearList) { _, which ->
-                selectedYear = years[which]
-                binding.yearButton.text = selectedYear.toString()
-            }
-            .show()
-    }
-
-    private fun showMonthPicker() {
-        val months = (1..12).toList()
-        val monthList = months.map { it.toString() }.toTypedArray()
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Select Month")
-            .setItems(monthList) { _, which ->
-                selectedMonth = months[which]
-                binding.monthButton.text = selectedMonth.toString()
-            }
-            .show()
-    }
-
-    private fun showDayPicker() {
-        val days = (1..31).toList()
-        val dayList = days.map { it.toString() }.toTypedArray()
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Select Day")
-            .setItems(dayList) { _, which ->
-                selectedDay = days[which]
-                binding.dayButton.text = selectedDay.toString()
-            }
-            .show()
+        spinner.setSelection(0) // 처음에 기본값 표시
     }
 
     override fun onDestroyView() {

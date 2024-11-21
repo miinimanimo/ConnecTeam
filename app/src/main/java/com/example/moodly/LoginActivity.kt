@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import retrofit2.Call
@@ -22,6 +23,10 @@ class LoginActivity : AppCompatActivity() {
             val email = findViewById<EditText>(R.id.emailEditText).text.toString()
             val password = findViewById<EditText>(R.id.passwordEditText).text.toString()
             loginUser(email, password)
+        }
+        // 회원가입 버튼 클릭 리스너 설정
+        findViewById<Button>(R.id.signUpButton).setOnClickListener {
+            navigateToSignUpFragment()
         }
     }
 
@@ -63,5 +68,14 @@ class LoginActivity : AppCompatActivity() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish() // 현재 Activity 종료
+    }
+    private fun navigateToSignUpFragment() {
+        val fragment = SignUpFragment()
+
+        // FragmentTransaction을 시작하고 Fragment를 FrameLayout에 추가
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, fragment) // fragmentContainer는 FrameLayout의 ID
+            .addToBackStack(null) // 뒤로가기 버튼으로 돌아갈 수 있도록 설정
+            .commit()
     }
 }
