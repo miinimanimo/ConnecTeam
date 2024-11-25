@@ -52,6 +52,10 @@ dependencies {
     implementation("com.google.android.material:material:1.8.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(libs.play.services.location)
+
+    // 위치 제공 라이브러리
+    implementation ("com.google.android.gms:play-services-location:18.0.0")
 
 
     // 테스트 라이브러리
