@@ -1,7 +1,6 @@
 package com.example.moodly
 
 import android.graphics.Bitmap
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
@@ -33,10 +32,10 @@ class SavedDiaryFragment : Fragment(R.layout.fragment_saved_diary) {
         val diaryEmotion = view.findViewById<TextView>(R.id.diaryEmotion)
 
         // 다이어리 위도, 경도 가져오기 (기본값 설정)
-        val savedDiaryLatitude = arguments?.getString("diaryLatitude") ?: "저장된 위도가 없습니다."
-        diaryLatitude.text = savedDiaryLatitude
-        val savedDiaryLongitude = arguments?.getString("diaryLongitude") ?: "저장된 경도가 없습니다."
-        diaryLongitude.text = savedDiaryLongitude
+        val savedDiaryLatitude = arguments?.getDouble("diaryLatitude") ?: "저장된 위도가 없습니다."
+        diaryLatitude.text = savedDiaryLatitude.toString()
+        val savedDiaryLongitude = arguments?.getDouble("diaryLongitude") ?: "저장된 경도가 없습니다."
+        diaryLongitude.text = savedDiaryLongitude.toString()
 
         val timestamp = arguments?.getLong("timestamp") ?: 0L
         val date = Date(timestamp)  // 현재 시간을 Date로 변환
@@ -53,6 +52,9 @@ class SavedDiaryFragment : Fragment(R.layout.fragment_saved_diary) {
         // 다이어리 감정 가져오기
         val savedDiaryEmotion = arguments?.getString("diaryEmotion") ?: "저장된 감정이 없습니다."
         diaryEmotion.text = savedDiaryEmotion
+
+        //다이어리 emotion ID 가져오기
+        val savedDiaryEmotionID = arguments?.getInt("diaryEmotionID") ?: 0
 
         // 다이어리 내용 가져오기 (기본값 설정)
         val savedDiaryContent = arguments?.getString("diaryContent") ?: "저장된 내용이 없습니다."
