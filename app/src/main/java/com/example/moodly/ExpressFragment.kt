@@ -34,6 +34,22 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 import androidx.navigation.fragment.findNavController
 import java.util.Locale
+import android.util.Base64
+import okhttp3.MediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.Call
+import java.io.ByteArrayOutputStream
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.File
+import java.io.FileOutputStream
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.Date
+import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
 
 class ExpressFragment : Fragment(R.layout.fragment_express) {
 
@@ -108,217 +124,16 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
             }
         }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_express, container, false)
-
-        // 뷰 요소들 찾기
-        backButton = view.findViewById(R.id.myVectorImageView)
-        titleEditText = view.findViewById(R.id.titleEditText)
-        // dateEditText = view.findViewById(R.id.dateEditText)
-
-        textEditText = view.findViewById(R.id.textEditText)
-        imageView = view.findViewById(R.id.photoImageView)
-        insertPhotoButton = view.findViewById(R.id.insertPhotoButton)
-        photoViewLayout = view.findViewById(R.id.photoViewLayout)
-        photoImageView = view.findViewById(R.id.photoImageView)
-        recordButton = view.findViewById(R.id.recordButton)
-
-        // 감정 체크박스 설정
-        emotionTextView = view.findViewById(R.id.emotionTextView)
-        feelingHappy = view.findViewById(R.id.feelingHappy)
-        feelingExcited = view.findViewById(R.id.feelingExcited)
-        feelingSoso = view.findViewById(R.id.feelingSoso)
-        feelingSad = view.findViewById(R.id.feelingSad)
-        feelingAngry = view.findViewById(R.id.feelingAngry)
-        feelingTired = view.findViewById(R.id.feelingTired)
-
-        // 뒤로 가기 버튼 클릭 리스너
-        backButton.setOnClickListener {
-            val intent = Intent(requireContext(), MainActivity::class.java)
-            startActivity(intent)
-            requireActivity().finish()
-        }
-
-        //음성 인식 버튼 클릭 리스너
-        recordButton.setOnClickListener {
-            if (isRecording) {
-                // 음성 인식 중이면 중단
-                stopSpeechRecognition()
-                // 녹음 중지 메시지 Toast로 표시
-                Toast.makeText(requireContext(), "Record stopped.", Toast.LENGTH_SHORT).show()
-            } else {
-                // 권한이 없으면 권한 요청
-                if (ContextCompat.checkSelfPermission(
-                        requireContext(),
-                        Manifest.permission.RECORD_AUDIO
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    requestRecordAudioPermission.launch(Manifest.permission.RECORD_AUDIO)
-                } else {
-                    // 권한이 이미 허용되었으면 음성 인식 시작
-                    startSpeechRecognition()
-                    // 녹음 시작 메시지 Toast로 표시
-                    Toast.makeText(requireContext(), "Record started.", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
-
-        // SpeechRecognizer 설정
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
-        speechRecognizer.setRecognitionListener(recognitionListener)
-
-        // 음성 인식 Intent 설정
-        speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-        speechRecognizerIntent.putExtra(
-            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-        )
-        speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-
-//        // 날짜 선택 DatePickerDialog
-//        dateEditText.setOnClickListener {
-//            val calendar = Calendar.getInstance()
-//            val year = calendar.get(Calendar.YEAR)
-//            val month = calendar.get(Calendar.MONTH)
-//            val day = calendar.get(Calendar.DAY_OF_MONTH)
-//
-//            val datePickerDialog = DatePickerDialog(requireActivity(), { _, selectedYear, selectedMonth, selectedDay ->
-//                calendar.set(selectedYear, selectedMonth, selectedDay)
-//                val dateFormat = SimpleDateFormat("MMM dd yyyy", Locale.getDefault())
-//                dateEditText.setText(dateFormat.format(calendar.time))
-//            }, year, month, day)
-//
-//            datePickerDialog.show()
-//        }
-
-        // 감정 체크박스 설정
-        val checkBoxes = listOf(
-            feelingHappy, feelingExcited, feelingSad, feelingSoso, feelingAngry, feelingTired
-        )
-
-        for (checkBox in checkBoxes) {
-            checkBox.setOnCheckedChangeListener { _, _ ->
-                // 선택된 감정을 emotionTextView에 반영
-                emotionTextView.text = "In a ${getSelectedEmotion()} moment..."
-            }
-        }
-
-
-        // 사진 추가 버튼
-        insertPhotoButton.setOnClickListener {
-            val options = arrayOf("Take a photo", "Choose from Gallery")
-            val builder = AlertDialog.Builder(requireContext())
-            builder.setTitle("Select an option")
-            builder.setItems(options) { _, which ->
-                when (which) {
-                    0 -> checkCameraPermission()  // 카메라에서 찍기
-                    1 -> chooseFromGallery()  // 갤러리에서 선택
-                }
-            }
-            builder.show()
-        }
-
-
-        // 밝기 조정 SeekBar
-        val brightnessSeekBar: SeekBar = view.findViewById(R.id.brightness_seekbar)
-        val brightnessLabel: TextView = view.findViewById(R.id.brightness_label)
-
-        val currentBrightness = Settings.System.getInt(
-            requireContext().contentResolver,
-            Settings.System.SCREEN_BRIGHTNESS,
-            125
-        )
-        brightnessSeekBar.progress = currentBrightness
-
-        // 밝기 조절 권한 체크
-        if (!Settings.System.canWrite(requireContext())) {
-            // 권한 요청
-            val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
-                data = Uri.parse("package:${requireContext().packageName}")
-            }
-            Toast.makeText(requireContext(), "권한을 허용해야 밝기를 조절할 수 있습니다.", Toast.LENGTH_SHORT).show()
-            startActivity(intent)
-        } else {
-            setupBrightnessControl(brightnessSeekBar, brightnessLabel)
-        }
-
-        brightnessSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                setScreenBrightness(progress)
-
-                val percentage = (progress.toFloat() / 255 * 100).toInt()
-                brightnessLabel.text = "Mood Brightness: $percentage%"
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-
-        // 저장 버튼
-        // express 프레그먼트의 저장 버튼
-        val saveButton: Button = view.findViewById(R.id.saveButton)
-        saveButton.setOnClickListener {
-            // EditText에서 다이어리 내용과 제목 가져오기
-            val diaryTitle = titleEditText.text.toString()  // 제목 입력 EditText
-            val diaryContent = textEditText.text.toString()  // 내용 입력 EditText
-            val diaryEmotion = emotionTextView.text.toString() // 감정 TextView
-
-            val drawable = photoImageView.drawable
-
-            // drawable을 Bitmap으로 변환
-            val bitmap = (drawable as? BitmapDrawable)?.bitmap
-
-
-            // 제목과 내용이 비어있는지 확인
-            if (diaryTitle.isEmpty() || diaryContent.isEmpty()) {
-                Snackbar.make(
-                    requireView(),
-                    "Title and content cannot be empty!",
-                    Snackbar.LENGTH_SHORT
-                ).setAction("OK") {
-                    // OK 버튼 클릭 시 동작 (필요 없으면 비워둠)
-                }.show()
-                return@setOnClickListener
-            }
-
-            // Bundle로 다이어리 제목과 내용을 전달
-            val bundle = Bundle()
-            bundle.putString("diaryTitle", diaryTitle)
-            bundle.putString("diaryEmotion", diaryEmotion)
-            bundle.putString("diaryContent", diaryContent)
-            bundle.putParcelable("diaryImage", bitmap)
-
-            // SavedDiaryFragment로 이동
-            findNavController().navigate(R.id.action_expressFragment_to_savedDiaryFragment, bundle)
-
-            // 스낵바 표시
-            Snackbar.make(requireView(), "Diary saved successfully!", Snackbar.LENGTH_SHORT).setAction("OK"){
-            }.show()
-        }
-        return view
-    }
-
-
     // 선택된 감정 반환
     private fun getSelectedEmotion(): String {
-        val selectedEmotions = mutableListOf<String>()
-
-        if (feelingHappy.isChecked) selectedEmotions.add("Happy")
-        if (feelingExcited.isChecked) selectedEmotions.add("Excited")
-        if (feelingSoso.isChecked) selectedEmotions.add("Soso")
-        if (feelingSad.isChecked) selectedEmotions.add("Sad")
-        if (feelingAngry.isChecked) selectedEmotions.add("Angry")
-        if (feelingTired.isChecked) selectedEmotions.add("Tired")
-
-        return if (selectedEmotions.isNotEmpty()) {
-            selectedEmotions.joinToString(", ") // 쉼표로 감정을 구분
-        } else {
-            "Neutral" // 아무것도 선택되지 않은 경우
+        return when {
+            feelingHappy.isChecked -> "Happy"
+            feelingExcited.isChecked -> "Excited"
+            feelingSoso.isChecked -> "Soso"
+            feelingSad.isChecked -> "Sad"
+            feelingAngry.isChecked -> "Angry"
+            feelingTired.isChecked -> "Tired"
+            else -> "Neutral" // 아무것도 선택되지 않은 경우
         }
     }
 
@@ -490,4 +305,324 @@ class ExpressFragment : Fragment(R.layout.fragment_express) {
         }
         return null
     }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val view = inflater.inflate(R.layout.fragment_express, container, false)
+
+        // 뷰 요소들 찾기
+        backButton = view.findViewById(R.id.myVectorImageView)
+        titleEditText = view.findViewById(R.id.titleEditText)
+        // dateEditText = view.findViewById(R.id.dateEditText)
+
+        textEditText = view.findViewById(R.id.textEditText)
+        imageView = view.findViewById(R.id.photoImageView)
+        insertPhotoButton = view.findViewById(R.id.insertPhotoButton)
+        photoViewLayout = view.findViewById(R.id.photoViewLayout)
+        photoImageView = view.findViewById(R.id.photoImageView)
+        recordButton = view.findViewById(R.id.recordButton)
+
+        // 감정 체크박스 설정
+        emotionTextView = view.findViewById(R.id.emotionTextView)
+        feelingHappy = view.findViewById(R.id.feelingHappy)
+        feelingExcited = view.findViewById(R.id.feelingExcited)
+        feelingSoso = view.findViewById(R.id.feelingSoso)
+        feelingSad = view.findViewById(R.id.feelingSad)
+        feelingAngry = view.findViewById(R.id.feelingAngry)
+        feelingTired = view.findViewById(R.id.feelingTired)
+
+        // 뒤로 가기 버튼 클릭 리스너
+        backButton.setOnClickListener {
+            val intent = Intent(requireContext(), MainActivity::class.java)
+            startActivity(intent)
+            requireActivity().finish()
+        }
+
+        //음성 인식 버튼 클릭 리스너
+        recordButton.setOnClickListener {
+            if (isRecording) {
+                // 음성 인식 중이면 중단
+                stopSpeechRecognition()
+                // 녹음 중지 메시지 Toast로 표시
+                Toast.makeText(requireContext(), "Record stopped.", Toast.LENGTH_SHORT).show()
+            } else {
+                // 권한이 없으면 권한 요청
+                if (ContextCompat.checkSelfPermission(
+                        requireContext(),
+                        Manifest.permission.RECORD_AUDIO
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    requestRecordAudioPermission.launch(Manifest.permission.RECORD_AUDIO)
+                } else {
+                    // 권한이 이미 허용되었으면 음성 인식 시작
+                    startSpeechRecognition()
+                    // 녹음 시작 메시지 Toast로 표시
+                    Toast.makeText(requireContext(), "Record started.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+
+        // SpeechRecognizer 설정
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
+        speechRecognizer.setRecognitionListener(recognitionListener)
+
+        // 음성 인식 Intent 설정
+        speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        speechRecognizerIntent.putExtra(
+            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+        )
+        speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+
+//        // 날짜 선택 DatePickerDialog
+//        dateEditText.setOnClickListener {
+//            val calendar = Calendar.getInstance()
+//            val year = calendar.get(Calendar.YEAR)
+//            val month = calendar.get(Calendar.MONTH)
+//            val day = calendar.get(Calendar.DAY_OF_MONTH)
+//
+//            val datePickerDialog = DatePickerDialog(requireActivity(), { _, selectedYear, selectedMonth, selectedDay ->
+//                calendar.set(selectedYear, selectedMonth, selectedDay)
+//                val dateFormat = SimpleDateFormat("MMM dd yyyy", Locale.getDefault())
+//                dateEditText.setText(dateFormat.format(calendar.time))
+//            }, year, month, day)
+//
+//            datePickerDialog.show()
+//        }
+
+        // 감정 체크박스 설정
+        val checkBoxes = listOf(
+            feelingHappy, feelingExcited, feelingSad, feelingSoso, feelingAngry, feelingTired
+        )
+
+        for (checkBox in checkBoxes) {
+            checkBox.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    // 다른 체크박스의 선택 해제
+                    for (otherCheckBox in checkBoxes) {
+                        if (otherCheckBox != buttonView) {
+                            otherCheckBox.isChecked = false // 선택된 체크박스 외에는 모두 해제
+                        }
+                    }
+                }
+                // 선택된 감정을 emotionTextView에 반영
+                emotionTextView.text = "In a ${getSelectedEmotion()} moment..."
+            }
+        }
+
+
+        // 사진 추가 버튼
+        insertPhotoButton.setOnClickListener {
+            val options = arrayOf("Take a photo", "Choose from Gallery")
+            val builder = AlertDialog.Builder(requireContext())
+            builder.setTitle("Select an option")
+            builder.setItems(options) { _, which ->
+                when (which) {
+                    0 -> checkCameraPermission()  // 카메라에서 찍기
+                    1 -> chooseFromGallery()  // 갤러리에서 선택
+                }
+            }
+            builder.show()
+        }
+
+
+        // 밝기 조정 SeekBar
+        val brightnessSeekBar: SeekBar = view.findViewById(R.id.brightness_seekbar)
+        val brightnessLabel: TextView = view.findViewById(R.id.brightness_label)
+
+        val currentBrightness = Settings.System.getInt(
+            requireContext().contentResolver,
+            Settings.System.SCREEN_BRIGHTNESS,
+            125
+        )
+        brightnessSeekBar.progress = currentBrightness
+
+        // 밝기 조절 권한 체크
+        if (!Settings.System.canWrite(requireContext())) {
+            // 권한 요청
+            val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
+                data = Uri.parse("package:${requireContext().packageName}")
+            }
+            Toast.makeText(requireContext(), "권한을 허용해야 밝기를 조절할 수 있습니다.", Toast.LENGTH_SHORT).show()
+            startActivity(intent)
+        } else {
+            setupBrightnessControl(brightnessSeekBar, brightnessLabel)
+        }
+
+        brightnessSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                setScreenBrightness(progress)
+
+                val percentage = (progress.toFloat() / 255 * 100).toInt()
+                brightnessLabel.text = "Mood Brightness: $percentage%"
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+        //사진 Base64 인코딩 수정 부분
+        fun encodeImageToBase64(bitmap: Bitmap): String {
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+            return Base64.encodeToString(byteArray, Base64.DEFAULT)
+        }
+
+
+        // 저장 버튼
+        // express 프레그먼트의 저장 버튼
+        val saveButton: Button = view.findViewById(R.id.saveButton)
+        saveButton.setOnClickListener {
+            // EditText에서 다이어리 내용과 제목 가져오기
+            val diaryTitle = titleEditText.text.toString()  // 제목 입력 EditText
+            val diaryContent = textEditText.text.toString()  // 내용 입력 EditText
+            val diaryEmotion =
+                emotionTextView.text.toString().replace("In a ", "").replace(" moment...", "")
+            // 감정 emotion ID 설정
+            val emotionID = when (diaryEmotion) {
+                "Happy" -> 1
+                "Excited" -> 2
+                "Soso" -> 3
+                "Sad" -> 4
+                "Angry" -> 5
+                "Tired" -> 6
+                else -> 1 // 감정이 설정되지 않았거나 알 수 없는 경우
+            }
+            val drawable = photoImageView.drawable
+
+            // drawable을 Bitmap으로 변환
+            val bitmap = (drawable as? BitmapDrawable)?.bitmap
+
+
+            // 제목과 내용이 비어있는지 확인
+            if (diaryTitle.isEmpty() || diaryContent.isEmpty()) {
+                Snackbar.make(
+                    requireView(),
+                    "Title and content cannot be empty!",
+                    Snackbar.LENGTH_SHORT
+                ).setAction("OK") {
+                    // OK 버튼 클릭 시 동작 (필요 없으면 비워둠)
+                }.show()
+                return@setOnClickListener
+            }
+            // api 요청 다이어리 저장
+            // 기본값 설정
+            val latitude = 37.5665 // 예: 서울의 위도
+            val longitude = 126.978 // 예: 서울의 경도
+            val brightness = 50      // 예: 기본 밝기 값
+            val safeDiaryTitle = diaryTitle.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_]"), "")
+
+            val dateFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+            val currentTime = System.currentTimeMillis()
+            val currentTimenow = LocalDateTime.now()
+            val formattedTime =
+                currentTimenow.format(dateFormat) // 최종 파일 이름 생성(dateFormat) // 최종 파일 이름 생성
+            val imageFileName = "${formattedTime}_${safeDiaryTitle}.jpg"
+
+            // Retrofit 인스턴스 가져오기
+            val apiService = RetrofitClient.getMainApiService(requireContext())
+            val imageFile = File(requireContext().cacheDir, imageFileName) // 수정된 파일 이름 사용
+            val outputStream = FileOutputStream(imageFile)
+            bitmap?.compress(Bitmap.CompressFormat.JPEG, 100, outputStream) // Bitmap을 파일로 저장
+            outputStream.close()
+
+
+            // RequestBody 생성
+// RequestBody 생성
+            val titleBody = diaryTitle.toRequestBody("text/plain".toMediaType())
+            val contentBody = diaryContent.toRequestBody("text/plain".toMediaType())
+            val emotionIdBody = emotionID.toString().toRequestBody("text/plain".toMediaType())
+            val latitudeBody = latitude.toString().toRequestBody("text/plain".toMediaType())
+            val longitudeBody = longitude.toString().toRequestBody("text/plain".toMediaType())
+            val brightnessBody = brightness.toString().toRequestBody("text/plain".toMediaType())
+
+// 이미지 파일을 Multipart로 전송
+            val requestFile = imageFile.asRequestBody("image/jpeg".toMediaType())
+            val imagePart = MultipartBody.Part.createFormData("image", imageFile.name, requestFile)
+
+            // POST 요청 수행
+            apiService.saveDiaryEntry(
+                titleBody,
+                contentBody,
+                emotionIdBody,
+                imagePart,
+                latitudeBody,
+                longitudeBody,
+                brightnessBody
+            ).enqueue(object : Callback<DiaryEntry> {
+                override fun onResponse(call: Call<DiaryEntry>, response: Response<DiaryEntry>) {
+                    if (response.isSuccessful) {
+                        // 성공적으로 응답을 받은 경우
+                        val diaryEntry = response.body()
+                        Log.d("API Response", "Response: ${response.body()}")
+                        if (diaryEntry != null) {
+                            // 다이어리 엔트리 저장 성공 메시지 표시
+                            Snackbar.make(
+                                requireView(),
+                                "Diary saved successfully: ${diaryEntry.title}",
+                                Snackbar.LENGTH_SHORT
+                            ).show()
+
+                            // Bundle로 다이어리 제목과 내용을 전달
+                            val bundle = Bundle().apply {
+                                putString("diaryTitle", diaryTitle)
+                                putString("diaryEmotion", diaryEmotion)
+                                putString("diaryContent", diaryContent)
+                                putParcelable("diaryImage", bitmap)
+                                putString("diaryEmotion", diaryEmotion)
+                                putInt("diaryEmotionID", emotionID)
+                                putDouble("latitude", latitude)
+                                putDouble("longitude", longitude)
+                                putLong("timestamp", currentTime)
+                                putString("diaryLongitude", longitude.toString())
+                                putString("diaryLatitude", latitude.toString())
+                                putString("diaryTime", currentTime.toString())
+                            }
+
+                            // SavedDiaryFragment로 이동
+                            findNavController().navigate(
+                                R.id.action_expressFragment_to_savedDiaryFragment,
+                                bundle
+                            )
+                        } else {
+                            Log.e("API Error", "Error: ${response.errorBody()?.string()}")
+                            // 응답 본문이 null인 경우
+                            Snackbar.make(
+                                requireView(),
+                                "Diary saved, but no data returned.",
+                                Snackbar.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        // 서버 오류 (4xx 또는 5xx 상태 코드)
+                        val errorMessage = response.errorBody()?.string() ?: "Unknown error"
+                        Snackbar.make(requireView(), "Error: $errorMessage", Snackbar.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+
+                override fun onFailure(call: Call<DiaryEntry>, t: Throwable) {
+                    // 요청 실패 처리
+                    Snackbar.make(
+                        requireView(),
+                        "Request failed: ${t.message}",
+                        Snackbar.LENGTH_SHORT
+                    ).show()
+                }
+            })
+
+// 스낵바 표시
+            Snackbar.make(requireView(), "Diary saved successfully!", Snackbar.LENGTH_SHORT)
+                .setAction("OK") {
+                }.show()
+
+        }
+        return view
+    }
 }
+
+
+
