@@ -8,28 +8,31 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.NavOptions
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.moodly.databinding.FragmentHomeBinding
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView
 import com.prolificinteractive.materialcalendarview.CalendarDay
 import com.prolificinteractive.materialcalendarview.DayViewDecorator
 import com.prolificinteractive.materialcalendarview.DayViewFacade
 import com.prolificinteractive.materialcalendarview.spans.DotSpan
+import com.prolificinteractive.materialcalendarview.OnDateSelectedListener
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.format.TextStyle
 import java.util.*
 
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
+    private val diaryAdapter = DiaryAdapter()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -60,6 +63,16 @@ class HomeFragment : Fragment() {
         binding.menuButton.setOnClickListener {
             showPopupMenu(it)
         }
+
+        // RecyclerView 설정
+        setupRecyclerView()
+    }
+
+    private fun setupRecyclerView() {
+        binding.diaryRecyclerView.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = diaryAdapter
+        }
     }
 
     private fun setCalendarHeader() {
@@ -68,18 +81,22 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupCalendar() {
+        // 현재 날짜로 초기화할 때는 Calendar가 0-based이므로 +1 필요
         val currentDate = Calendar.getInstance()
         fetchDiariesForMonth(
             currentDate.get(Calendar.YEAR),
             currentDate.get(Calendar.MONTH) + 1
         )
 
+        // MaterialCalendarView에서 받은 month에는 +1할 필요 없음 (이미 보정되어 있음)
         binding.calendarView.setOnMonthChangedListener { widget, date ->
-            fetchDiariesForMonth(date.year, date.month + 1)
+            fetchDiariesForMonth(date.year, date.month)
         }
 
         binding.calendarView.setOnDateChangedListener { widget, date, selected ->
-            displayDiaryEntriesForDate(LocalDate.of(date.year, date.month + 1, date.day))
+            if (selected) {
+                fetchDiariesForDay(date.year, date.month, date.day)
+            }
         }
     }
 
@@ -109,6 +126,32 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun fetchDiariesForDay(year: Int, month: Int, day: Int) {
+        val token = requireContext().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
+            .getString("jwt_token", null)
+
+        if (token != null) {
+            val authToken = "Bearer $token"
+            RetrofitClient.instance.getDiariesForDay(authToken, year, month, day)
+                .enqueue(object : Callback<List<DayDiary>> {
+                    override fun onResponse(
+                        call: Call<List<DayDiary>>,
+                        response: Response<List<DayDiary>>
+                    ) {
+                        if (response.isSuccessful) {
+                            response.body()?.let { diaries ->
+                                diaryAdapter.updateDiaries(diaries)
+                            }
+                        }
+                    }
+
+                    override fun onFailure(call: Call<List<DayDiary>>, t: Throwable) {
+                        Log.e("Diary", "Failed to fetch diaries", t)
+                    }
+                })
+        }
+    }
+
     private fun highlightDiaryDates(year: Int, month: Int, days: List<Int>) {
         binding.calendarView.removeDecorators()
 
@@ -120,15 +163,11 @@ class HomeFragment : Fragment() {
             }
 
             override fun decorate(view: DayViewFacade) {
-                view.addSpan(DotSpan(5f, resources.getColor(R.color.purple_500))) // 색상은 원하는대로 변경 가능
+                view.addSpan(DotSpan(5f, resources.getColor(R.color.purple_500)))
             }
         }
 
         binding.calendarView.addDecorator(decorator)
-    }
-
-    private fun displayDiaryEntriesForDate(date: LocalDate) {
-        binding.diaryEntries.text = "Entries for ${date.dayOfMonth} ${date.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${date.year}"
     }
 
     override fun onDestroyView() {
@@ -168,5 +207,44 @@ class HomeFragment : Fragment() {
             }
         }
         popupMenu.show()
+    }
+
+    inner class DiaryAdapter : RecyclerView.Adapter<DiaryAdapter.DiaryViewHolder>() {
+        private var diaries: List<DayDiary> = listOf()
+
+        inner class DiaryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val titleText: TextView = itemView.findViewById(R.id.titleText)
+            val emotionText: TextView = itemView.findViewById(R.id.emotionText)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DiaryViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_diary, parent, false)
+            return DiaryViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: DiaryViewHolder, position: Int) {
+            val diary = diaries[position]
+            holder.titleText.text = diary.title
+            val emoticons = diary.emotion_categories.map { emotion ->
+                when (emotion.name) {
+                    "Happy" -> "😊"
+                    "Excited" -> "😎"
+                    "Soso" -> "🙂"
+                    "Sad" -> "😕"
+                    "Angry" -> "😠"
+                    "Tired" -> "😪"
+                    else -> "😐"
+                }
+            }
+            holder.emotionText.text = emoticons.joinToString(" ")
+        }
+
+        override fun getItemCount() = diaries.size
+
+        fun updateDiaries(newDiaries: List<DayDiary>) {
+            diaries = newDiaries
+            notifyDataSetChanged()
+        }
     }
 }

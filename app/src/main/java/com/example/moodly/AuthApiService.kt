@@ -18,7 +18,26 @@ interface AuthApiService {
         @Path("year") year: Int,
         @Path("month") month: Int
     ): Call<DaysResponse>  // DaysResponse로 변경
+
+    @GET("main/diaries/{year}/{month}/{day}/")
+    fun getDiariesForDay(
+        @Header("Authorization") token: String,
+        @Path("year") year: Int,
+        @Path("month") month: Int,
+        @Path("day") day: Int
+    ): Call<List<DayDiary>>
 }
+
+// 새로운 데이터 클래스들
+data class DayDiary(
+    val title: String,
+    val emotion_categories: List<EmotionCategory>
+)
+
+data class EmotionCategory(
+    val id: Int,
+    val name: String
+)
 
 // 서버 응답을 위한 데이터 클래스
 data class DaysResponse(
