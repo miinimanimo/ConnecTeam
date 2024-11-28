@@ -10,6 +10,8 @@ import android.view.ViewGroup
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
+import android.content.Intent
+import android.net.Uri
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.NavOptions
@@ -33,6 +35,7 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val diaryAdapter = DiaryAdapter()
+    private val recommendationAdapter = RecommendationAdapter()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -66,6 +69,63 @@ class HomeFragment : Fragment() {
 
         // RecyclerView 설정
         setupRecyclerView()
+
+        // 추천 RecyclerView 설정
+        setupRecommendationRecyclerView()
+
+        // 추천 데이터 로드
+        loadRecommendations()
+
+    }
+
+    private fun setupRecommendationRecyclerView() {
+        binding.recommendationsRecyclerView.apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = recommendationAdapter
+        }
+    }
+
+    private fun loadRecommendations() {
+        val token = requireContext().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
+            .getString("jwt_token", null)
+
+        if (token != null) {
+            val authToken = "Bearer $token"
+            // 책 데이터 로드
+            RetrofitClient.instance.getBooks(authToken)
+                .enqueue(object : Callback<List<Book>> {
+                    override fun onResponse(call: Call<List<Book>>, response: Response<List<Book>>) {
+                        if (response.isSuccessful) {
+                            response.body()?.let { books ->
+                                recommendationAdapter.submitBooks(books)
+                            }
+                        }
+                    }
+
+                    override fun onFailure(call: Call<List<Book>>, t: Throwable) {
+                        Log.e("Books", "Failed to fetch books", t)
+                    }
+                })
+
+            // 유튜브 비디오 데이터 로드
+            RetrofitClient.instance.getYoutubeVideos(authToken)
+                .enqueue(object : Callback<List<YoutubeVideo>> {
+                    override fun onResponse(
+                        call: Call<List<YoutubeVideo>>,
+                        response: Response<List<YoutubeVideo>>
+                    ) {
+                        if (response.isSuccessful) {
+                            response.body()?.let { videos ->
+                                recommendationAdapter.submitVideos(videos)
+                            }
+                        }
+                    }
+
+                    override fun onFailure(call: Call<List<YoutubeVideo>>, t: Throwable) {
+                        Log.e("Videos", "Failed to fetch videos", t)
+                    }
+                })
+        }
     }
 
     private fun setupRecyclerView() {
@@ -261,4 +321,69 @@ class HomeFragment : Fragment() {
             notifyDataSetChanged()
         }
     }
+
+    // 새로운 어댑터 클래스 추가
+    inner class RecommendationAdapter : RecyclerView.Adapter<RecommendationAdapter.ViewHolder>() {
+        private val items = mutableListOf<Any>()
+
+        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val titleText: TextView = itemView.findViewById(R.id.titleText)
+            val subtitleText: TextView = itemView.findViewById(R.id.subtitleText)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_recommendation, parent, false)
+            return ViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = items[position]
+            when (item) {
+                is Book -> {
+                    holder.titleText.text = item.title
+                    holder.subtitleText.text = "책 찾아보기"
+                    holder.itemView.setOnClickListener {
+                        // 인터파크에서 책 검색 결과 페이지로 이동
+                        val url = "http://book.interpark.com/search/bookSearch.do?query=${item.title}"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                    }
+                }
+                is YoutubeVideo -> {
+                    holder.titleText.text = item.title
+                    holder.subtitleText.text = "음악 들으러 가기"
+                    holder.itemView.setOnClickListener {
+                        // 유튜브 링크로 이동
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.link))
+                        startActivity(intent)
+                    }
+                }
+            }
+        }
+
+        override fun getItemCount() = items.size
+
+        fun submitBooks(books: List<Book>) {
+            items.add("책 찾아보기") // 책 섹션 제목 추가
+            items.addAll(books)
+            notifyDataSetChanged()
+        }
+
+        fun submitVideos(videos: List<YoutubeVideo>) {
+            val emotionText = when (videos.first().emotionCategory) {
+                1 -> "행복할 때 이 음악은 어떠세요?"
+                2 -> "신날 때 이 음악은 어떠세요?"
+                3 -> "그저 그럴 때 이 음악은 어떠세요?"
+                4 -> "우울할 때 이 음악은 어떠세요?"
+                5 -> "화날 때 이 음악은 어떠세요?"
+                6 -> "피곤할 때 이 음악은 어떠세요?"
+                else -> "음악 추천"
+            }
+            items.add(emotionText) // 감정에 맞는 섹션 제목 추가
+            items.addAll(videos)
+            notifyDataSetChanged()
+        }
+    }
+
 }

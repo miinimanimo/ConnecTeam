@@ -26,7 +26,27 @@ interface AuthApiService {
         @Path("month") month: Int,
         @Path("day") day: Int
     ): Call<List<DayDiary>>
+
+    @GET("main/books")
+    fun getBooks(@Header("Authorization") token: String): Call<List<Book>>
+
+    @GET("main/youtube-videos")
+    fun getYoutubeVideos(@Header("Authorization") token: String): Call<List<YoutubeVideo>>
 }
+
+// 책 정보를 위한 데이터 클래스
+data class Book(
+    val rank: Int,
+    val title: String,
+    val bookClass: String
+)
+
+// 음악 정보를 위한 데이터 클래스
+data class YoutubeVideo(
+    val title: String,
+    val link: String,
+    val emotionCategory: Int
+)
 
 // 새로운 데이터 클래스들
 data class DayDiary(
