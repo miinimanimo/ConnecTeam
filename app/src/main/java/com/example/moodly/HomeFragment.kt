@@ -140,13 +140,14 @@ class HomeFragment : Fragment() {
                     ) {
                         if (response.isSuccessful) {
                             response.body()?.let { diaries ->
+                                binding.contentCard.visibility = View.VISIBLE
                                 if (diaries.isEmpty()) {
                                     // 일기가 없는 경우
-                                    binding.emptyMessageCard.visibility = View.VISIBLE
+                                    binding.emptyDiaryText.visibility = View.VISIBLE
                                     binding.diaryRecyclerView.visibility = View.GONE
                                 } else {
                                     // 일기가 있는 경우
-                                    binding.emptyMessageCard.visibility = View.GONE
+                                    binding.emptyDiaryText.visibility = View.GONE
                                     binding.diaryRecyclerView.visibility = View.VISIBLE
                                     diaryAdapter.updateDiaries(diaries)
                                 }
@@ -156,9 +157,9 @@ class HomeFragment : Fragment() {
 
                     override fun onFailure(call: Call<List<DayDiary>>, t: Throwable) {
                         Log.e("Diary", "Failed to fetch diaries", t)
-                        // 에러 발생 시에도 메시지 표시
+                        binding.contentCard.visibility = View.VISIBLE
                         binding.emptyDiaryText.text = "Failed to load diaries"
-                        binding.emptyMessageCard.visibility = View.VISIBLE
+                        binding.emptyDiaryText.visibility = View.VISIBLE
                         binding.diaryRecyclerView.visibility = View.GONE
                     }
                 })
