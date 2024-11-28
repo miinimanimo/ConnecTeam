@@ -342,7 +342,7 @@ class HomeFragment : Fragment() {
             when (item) {
                 is Book -> {
                     holder.titleText.text = item.title
-                    holder.subtitleText.text = "책 찾아보기"
+                    holder.subtitleText.text = "Find Book"
                     holder.itemView.setOnClickListener {
                         // 인터파크에서 책 검색 결과 페이지로 이동
                         val url = "http://book.interpark.com/search/bookSearch.do?query=${item.title}"
@@ -352,7 +352,7 @@ class HomeFragment : Fragment() {
                 }
                 is YoutubeVideo -> {
                     holder.titleText.text = item.title
-                    holder.subtitleText.text = "음악 들으러 가기"
+                    holder.subtitleText.text = "Go listen to music"
                     holder.itemView.setOnClickListener {
                         // 유튜브 링크로 이동
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.link))
@@ -365,20 +365,20 @@ class HomeFragment : Fragment() {
         override fun getItemCount() = items.size
 
         fun submitBooks(books: List<Book>) {
-            items.add("책 찾아보기") // 책 섹션 제목 추가
+            items.add("Find Book") // 책 섹션 제목 추가
             items.addAll(books)
             notifyDataSetChanged()
         }
 
         fun submitVideos(videos: List<YoutubeVideo>) {
             val emotionText = when (videos.first().emotionCategory) {
-                1 -> "행복할 때 이 음악은 어떠세요?"
-                2 -> "신날 때 이 음악은 어떠세요?"
-                3 -> "그저 그럴 때 이 음악은 어떠세요?"
-                4 -> "우울할 때 이 음악은 어떠세요?"
-                5 -> "화날 때 이 음악은 어떠세요?"
-                6 -> "피곤할 때 이 음악은 어떠세요?"
-                else -> "음악 추천"
+                1 -> "How about this music when you're happy?"
+                2 -> "How about this music when you're excited?"
+                3 -> "How about this music when you're feeling so-so?"
+                4 -> "How about this music when you're sad?"
+                5 -> "How about this music when you're angry?"
+                6 -> "How about this music when you're tired?"
+                else -> "Music recommendation"
             }
             items.add(emotionText) // 감정에 맞는 섹션 제목 추가
             items.addAll(videos)

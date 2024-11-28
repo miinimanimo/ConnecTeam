@@ -48,7 +48,7 @@ data class YoutubeVideo(
     val emotionCategory: Int
 )
 
-// 새로운 데이터 클래스들
+// 새로운 데이터 클래스들 <-여기 합칠때 좀 잘 봐야할거같은데 이모션 ....ㅠㅠㅠㅠ
 data class DayDiary(
     val title: String,
     val emotion_categories: List<EmotionCategory>
