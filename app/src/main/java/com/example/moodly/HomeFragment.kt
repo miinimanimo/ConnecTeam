@@ -140,13 +140,26 @@ class HomeFragment : Fragment() {
                     ) {
                         if (response.isSuccessful) {
                             response.body()?.let { diaries ->
-                                diaryAdapter.updateDiaries(diaries)
+                                if (diaries.isEmpty()) {
+                                    // 일기가 없는 경우
+                                    binding.emptyMessageCard.visibility = View.VISIBLE
+                                    binding.diaryRecyclerView.visibility = View.GONE
+                                } else {
+                                    // 일기가 있는 경우
+                                    binding.emptyMessageCard.visibility = View.GONE
+                                    binding.diaryRecyclerView.visibility = View.VISIBLE
+                                    diaryAdapter.updateDiaries(diaries)
+                                }
                             }
                         }
                     }
 
                     override fun onFailure(call: Call<List<DayDiary>>, t: Throwable) {
                         Log.e("Diary", "Failed to fetch diaries", t)
+                        // 에러 발생 시에도 메시지 표시
+                        binding.emptyDiaryText.text = "Failed to load diaries"
+                        binding.emptyMessageCard.visibility = View.VISIBLE
+                        binding.diaryRecyclerView.visibility = View.GONE
                     }
                 })
         }
@@ -230,11 +243,11 @@ class HomeFragment : Fragment() {
                 when (emotion.name) {
                     "Happy" -> "😊"
                     "Excited" -> "😎"
-                    "Soso" -> "🙂"
+                    "Soso" -> "😐"
                     "Sad" -> "😕"
                     "Angry" -> "😠"
                     "Tired" -> "😪"
-                    else -> "😐"
+                    else -> ""
                 }
             }
             holder.emotionText.text = emoticons.joinToString(" ")

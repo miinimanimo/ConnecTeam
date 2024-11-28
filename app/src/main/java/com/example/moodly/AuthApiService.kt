@@ -17,7 +17,7 @@ interface AuthApiService {
         @Header("Authorization") token: String,
         @Path("year") year: Int,
         @Path("month") month: Int
-    ): Call<DaysResponse>  // DaysResponse로 변경
+    ): Call<DaysResponse>
 
     @GET("main/diaries/{year}/{month}/{day}/")
     fun getDiariesForDay(

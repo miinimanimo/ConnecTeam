@@ -65,19 +65,89 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
+        android:layout_marginHorizontal="16dp"
         app:mcv_selectionColor="#00F"
         app:mcv_showOtherDates="all"
+        app:mcv_tileHeight="40dp"
+        app:mcv_tileWidth="40dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/calendarHeader" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/diaryRecyclerView"
+<!--    <TextView-->
+<!--        android:id="@+id/emptyDiaryText"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="No diaries for this date"-->
+<!--        android:textAlignment="center"-->
+<!--        android:textSize="16sp"-->
+<!--        android:textColor="#757575"-->
+<!--        android:fontFamily="sans-serif-light"-->
+<!--        android:padding="24dp"-->
+<!--        android:visibility="gone"-->
+<!--        app:layout_constraintTop_toBottomOf="@id/calendarView"/>-->
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/emptyMessageCard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="24dp"
+        android:visibility="gone"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/calendarView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/emptyDiaryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No diaries for this date"
+                android:textAlignment="center"
+                android:textSize="16sp"
+                android:textColor="#757575"
+                android:fontFamily="sans-serif-light"/>
+
+            <View
+                android:layout_width="40dp"
+                android:layout_height="2dp"
+                android:background="#E0E0E0"
+                android:layout_marginTop="12dp"/>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/diaryListCard"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginHorizontal="8dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
         app:layout_constraintTop_toBottomOf="@id/calendarView"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/diaryRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:clipToPadding="false"/>
+
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
