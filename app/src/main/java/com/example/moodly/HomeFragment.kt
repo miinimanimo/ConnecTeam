@@ -1,7 +1,9 @@
 package com.example.moodly
 
 import android.app.AlertDialog
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,11 +11,19 @@ import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.NavOptions
 import com.example.moodly.databinding.FragmentHomeBinding
+import com.prolificinteractive.materialcalendarview.MaterialCalendarView
+import com.prolificinteractive.materialcalendarview.CalendarDay
+import com.prolificinteractive.materialcalendarview.DayViewDecorator
+import com.prolificinteractive.materialcalendarview.DayViewFacade
+import com.prolificinteractive.materialcalendarview.spans.DotSpan
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.TextStyle
-import androidx.navigation.NavOptions
 import java.util.*
 
 class HomeFragment : Fragment() {
@@ -53,24 +63,72 @@ class HomeFragment : Fragment() {
     }
 
     private fun setCalendarHeader() {
-        // 현재 날짜를 "일 월 년" 형식으로 표시
         val currentDate = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault()).format(Date())
         binding.calendarHeader.text = currentDate
-
     }
 
     private fun setupCalendar() {
-        // 날짜 클릭 이벤트 처리
-        binding.calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
-            val selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
-            displayDiaryEntriesForDate(selectedDate)
+        val currentDate = Calendar.getInstance()
+        fetchDiariesForMonth(
+            currentDate.get(Calendar.YEAR),
+            currentDate.get(Calendar.MONTH) + 1
+        )
+
+        binding.calendarView.setOnMonthChangedListener { widget, date ->
+            fetchDiariesForMonth(date.year, date.month + 1)
+        }
+
+        binding.calendarView.setOnDateChangedListener { widget, date, selected ->
+            displayDiaryEntriesForDate(LocalDate.of(date.year, date.month + 1, date.day))
         }
     }
 
+    private fun fetchDiariesForMonth(year: Int, month: Int) {
+        val token = requireContext().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
+            .getString("jwt_token", null)
+
+        if (token != null) {
+            val authToken = "Bearer $token"
+            RetrofitClient.instance.getDiariesForMonth(authToken, year, month)
+                .enqueue(object : Callback<DaysResponse> {
+                    override fun onResponse(
+                        call: Call<DaysResponse>,
+                        response: Response<DaysResponse>
+                    ) {
+                        if (response.isSuccessful) {
+                            response.body()?.let { daysResponse ->
+                                highlightDiaryDates(year, month, daysResponse.days)
+                            }
+                        }
+                    }
+
+                    override fun onFailure(call: Call<DaysResponse>, t: Throwable) {
+                        Log.e("Calendar", "Failed to fetch diary dates", t)
+                    }
+                })
+        }
+    }
+
+    private fun highlightDiaryDates(year: Int, month: Int, days: List<Int>) {
+        binding.calendarView.removeDecorators()
+
+        val decorator = object : DayViewDecorator {
+            override fun shouldDecorate(day: CalendarDay): Boolean {
+                return day.year == year &&
+                        day.month == month - 1 && // MaterialCalendarView는 0-based month를 사용
+                        days.contains(day.day)
+            }
+
+            override fun decorate(view: DayViewFacade) {
+                view.addSpan(DotSpan(5f, resources.getColor(R.color.purple_500))) // 색상은 원하는대로 변경 가능
+            }
+        }
+
+        binding.calendarView.addDecorator(decorator)
+    }
+
     private fun displayDiaryEntriesForDate(date: LocalDate) {
-        // 선택한 날짜에 대한 일기 목록을 가져와서 화면에 표시
         binding.diaryEntries.text = "Entries for ${date.dayOfMonth} ${date.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${date.year}"
-        // 실제 데이터베이스나 API에서 해당 날짜의 일기 데이터를 가져와야 함
     }
 
     override fun onDestroyView() {
@@ -85,27 +143,20 @@ class HomeFragment : Fragment() {
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.menu_profile -> {
-                    // 프로필 이동 처리
                     val navController = findNavController()
-
-                    // NavOptions 정의
                     val navOptions = NavOptions.Builder()
-                        .setPopUpTo(R.id.homeFragment, true)  // HomeFragment를 popUpTo로 스택에서 제거
-                        .setLaunchSingleTop(true)             // 중복된 프래그먼트 방지
+                        .setPopUpTo(R.id.homeFragment, true)
+                        .setLaunchSingleTop(true)
                         .build()
-
-                    // 네비게이션 수행
                     navController.navigate(R.id.action_homeFragment_to_profileFragment, null, navOptions)
                     true
                 }
                 R.id.menu_logout -> {
                     findNavController().navigate(R.id.action_homeFragment_to_loginActivity)
-                    // 로그아웃 처리 (예시: 메시지 표시)
                     Toast.makeText(requireContext(), "Logged out.", Toast.LENGTH_SHORT).show()
                     true
                 }
                 R.id.menu_contact -> {
-                    // 회사 Contact 정보 표시
                     AlertDialog.Builder(requireContext())
                         .setTitle("회사 Contact")
                         .setMessage("contact@company.com")

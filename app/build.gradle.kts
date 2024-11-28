@@ -57,6 +57,9 @@ dependencies {
     // 위치 제공 라이브러리
     implementation ("com.google.android.gms:play-services-location:18.0.0")
 
+    //캘린더뷰 라이브러리
+    implementation ("com.github.prolificinteractive:material-calendarview:2.0.1")
+
 
     // 테스트 라이브러리
     testImplementation(libs.junit)
