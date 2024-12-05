@@ -86,46 +86,43 @@ class HomeFragment : Fragment() {
     }
 
     private fun loadRecommendations() {
-        val token = requireContext().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
-            .getString("jwt_token", null)
+        val mainApiService = RetrofitClient.getMainApiService(requireContext())
+        var loadedBooks: List<Book>? = null
+        var loadedVideos: List<YoutubeVideo>? = null
 
-        if (token != null) {
-            val authToken = "Bearer $token"
-            // 책 데이터 로드
-            RetrofitClient.instance.getBooks(authToken)
-                .enqueue(object : Callback<List<Book>> {
-                    override fun onResponse(call: Call<List<Book>>, response: Response<List<Book>>) {
-                        if (response.isSuccessful) {
-                            response.body()?.let { books ->
-                                recommendationAdapter.submitBooks(books)
-                            }
+        // 책 데이터 로드
+        mainApiService.getBooks()
+            .enqueue(object : Callback<List<Book>> {
+                override fun onResponse(call: Call<List<Book>>, response: Response<List<Book>>) {
+                    if (response.isSuccessful) {
+                        loadedBooks = response.body()
+                        if (loadedVideos != null) {
+                            recommendationAdapter.submitData(loadedBooks ?: listOf(), loadedVideos!!)
                         }
                     }
+                }
 
-                    override fun onFailure(call: Call<List<Book>>, t: Throwable) {
-                        Log.e("Books", "Failed to fetch books", t)
-                    }
-                })
+                override fun onFailure(call: Call<List<Book>>, t: Throwable) {
+                    Log.e("Books", "Failed to fetch books", t)
+                }
+            })
 
-            // 유튜브 비디오 데이터 로드
-            RetrofitClient.instance.getYoutubeVideos(authToken)
-                .enqueue(object : Callback<List<YoutubeVideo>> {
-                    override fun onResponse(
-                        call: Call<List<YoutubeVideo>>,
-                        response: Response<List<YoutubeVideo>>
-                    ) {
-                        if (response.isSuccessful) {
-                            response.body()?.let { videos ->
-                                recommendationAdapter.submitVideos(videos)
-                            }
+        // 유튜브 비디오 데이터 로드
+        mainApiService.getYoutubeVideos()
+            .enqueue(object : Callback<List<YoutubeVideo>> {
+                override fun onResponse(call: Call<List<YoutubeVideo>>, response: Response<List<YoutubeVideo>>) {
+                    if (response.isSuccessful) {
+                        loadedVideos = response.body()
+                        if (loadedBooks != null) {
+                            recommendationAdapter.submitData(loadedBooks!!, loadedVideos ?: listOf())
                         }
                     }
+                }
 
-                    override fun onFailure(call: Call<List<YoutubeVideo>>, t: Throwable) {
-                        Log.e("Videos", "Failed to fetch videos", t)
-                    }
-                })
-        }
+                override fun onFailure(call: Call<List<YoutubeVideo>>, t: Throwable) {
+                    Log.e("Videos", "Failed to fetch videos", t)
+                }
+            })
     }
 
     private fun setupRecyclerView() {
@@ -161,69 +158,63 @@ class HomeFragment : Fragment() {
     }
 
     private fun fetchDiariesForMonth(year: Int, month: Int) {
-        val token = requireContext().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
-            .getString("jwt_token", null)
+        // MainApiService를 가져와서 사용
+        val mainApiService = RetrofitClient.getMainApiService(requireContext())
 
-        if (token != null) {
-            val authToken = "Bearer $token"
-            RetrofitClient.instance.getDiariesForMonth(authToken, year, month)
-                .enqueue(object : Callback<DaysResponse> {
-                    override fun onResponse(
-                        call: Call<DaysResponse>,
-                        response: Response<DaysResponse>
-                    ) {
-                        if (response.isSuccessful) {
-                            response.body()?.let { daysResponse ->
-                                highlightDiaryDates(year, month, daysResponse.days)
-                            }
+        mainApiService.getDiariesForMonth(year, month)
+            .enqueue(object : Callback<DaysResponse> {
+                override fun onResponse(
+                    call: Call<DaysResponse>,
+                    response: Response<DaysResponse>
+                ) {
+                    if (response.isSuccessful) {
+                        response.body()?.let { daysResponse ->
+                            highlightDiaryDates(year, month, daysResponse.days)
                         }
                     }
+                }
 
-                    override fun onFailure(call: Call<DaysResponse>, t: Throwable) {
-                        Log.e("Calendar", "Failed to fetch diary dates", t)
-                    }
-                })
-        }
+                override fun onFailure(call: Call<DaysResponse>, t: Throwable) {
+                    Log.e("Calendar", "Failed to fetch diary dates", t)
+                }
+            })
     }
 
     private fun fetchDiariesForDay(year: Int, month: Int, day: Int) {
-        val token = requireContext().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
-            .getString("jwt_token", null)
+        // MainApiService를 가져와서 사용
+        val mainApiService = RetrofitClient.getMainApiService(requireContext())
 
-        if (token != null) {
-            val authToken = "Bearer $token"
-            RetrofitClient.instance.getDiariesForDay(authToken, year, month, day)
-                .enqueue(object : Callback<List<DayDiary>> {
-                    override fun onResponse(
-                        call: Call<List<DayDiary>>,
-                        response: Response<List<DayDiary>>
-                    ) {
-                        if (response.isSuccessful) {
-                            response.body()?.let { diaries ->
-                                binding.contentCard.visibility = View.VISIBLE
-                                if (diaries.isEmpty()) {
-                                    // 일기가 없는 경우
-                                    binding.emptyDiaryText.visibility = View.VISIBLE
-                                    binding.diaryRecyclerView.visibility = View.GONE
-                                } else {
-                                    // 일기가 있는 경우
-                                    binding.emptyDiaryText.visibility = View.GONE
-                                    binding.diaryRecyclerView.visibility = View.VISIBLE
-                                    diaryAdapter.updateDiaries(diaries)
-                                }
+        mainApiService.getDiariesForDay(year, month, day)
+            .enqueue(object : Callback<List<DayDiary>> {
+                override fun onResponse(
+                    call: Call<List<DayDiary>>,
+                    response: Response<List<DayDiary>>
+                ) {
+                    if (response.isSuccessful) {
+                        response.body()?.let { diaries ->
+                            binding.contentCard.visibility = View.VISIBLE
+                            if (diaries.isEmpty()) {
+                                // 일기가 없는 경우
+                                binding.emptyDiaryText.visibility = View.VISIBLE
+                                binding.diaryRecyclerView.visibility = View.GONE
+                            } else {
+                                // 일기가 있는 경우
+                                binding.emptyDiaryText.visibility = View.GONE
+                                binding.diaryRecyclerView.visibility = View.VISIBLE
+                                diaryAdapter.updateDiaries(diaries)
                             }
                         }
                     }
+                }
 
-                    override fun onFailure(call: Call<List<DayDiary>>, t: Throwable) {
-                        Log.e("Diary", "Failed to fetch diaries", t)
-                        binding.contentCard.visibility = View.VISIBLE
-                        binding.emptyDiaryText.text = "Failed to load diaries"
-                        binding.emptyDiaryText.visibility = View.VISIBLE
-                        binding.diaryRecyclerView.visibility = View.GONE
-                    }
-                })
-        }
+                override fun onFailure(call: Call<List<DayDiary>>, t: Throwable) {
+                    Log.e("Diary", "Failed to fetch diaries", t)
+                    binding.contentCard.visibility = View.VISIBLE
+                    binding.emptyDiaryText.text = "Failed to load diaries"
+                    binding.emptyDiaryText.visibility = View.VISIBLE
+                    binding.diaryRecyclerView.visibility = View.GONE
+                }
+            })
     }
 
     private fun highlightDiaryDates(year: Int, month: Int, days: List<Int>) {
@@ -323,67 +314,81 @@ class HomeFragment : Fragment() {
     }
 
     // 새로운 어댑터 클래스 추가
-    inner class RecommendationAdapter : RecyclerView.Adapter<RecommendationAdapter.ViewHolder>() {
-        private val items = mutableListOf<Any>()
+    class RecommendationAdapter : RecyclerView.Adapter<RecommendationAdapter.ViewHolder>() {
 
+        // 음악(질문 + YoutubeVideo)와 책(Book) 데이터를 담는 리스트
+        private val items = mutableListOf<Any>() // Pair<String, YoutubeVideo> 또는 Book
+
+        // ViewHolder 정의
         inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             val titleText: TextView = itemView.findViewById(R.id.titleText)
             val subtitleText: TextView = itemView.findViewById(R.id.subtitleText)
         }
 
+        // ViewHolder 생성
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val view = LayoutInflater.from(parent.context)
                 .inflate(R.layout.item_recommendation, parent, false)
             return ViewHolder(view)
         }
 
+        // ViewHolder 데이터 바인딩
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             when (item) {
-                is Book -> {
-                    holder.titleText.text = item.title
-                    holder.subtitleText.text = "Find Book"
+                is Pair<*, *> -> { // 음악 추천
+                    val question = item.first as String
+                    val video = item.second as YoutubeVideo
+                    holder.titleText.text = question // 질문 텍스트 설정
+                    holder.subtitleText.text = "Listen to Music" // 버튼 텍스트
+                    holder.subtitleText.visibility = View.VISIBLE
                     holder.itemView.setOnClickListener {
-                        // 인터파크에서 책 검색 결과 페이지로 이동
-                        val url = "http://book.interpark.com/search/bookSearch.do?query=${item.title}"
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        startActivity(intent)
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(video.link))
+                        holder.itemView.context.startActivity(intent) // 유튜브 링크 열기
                     }
                 }
-                is YoutubeVideo -> {
-                    holder.titleText.text = item.title
-                    holder.subtitleText.text = "Go listen to music"
+                is Book -> { // 책 추천
+                    holder.titleText.text = item.title // 책 제목 설정
+                    holder.subtitleText.text = "Find Book" // 버튼 텍스트
+                    holder.subtitleText.visibility = View.VISIBLE
                     holder.itemView.setOnClickListener {
-                        // 유튜브 링크로 이동
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.link))
-                        startActivity(intent)
+                        val url = "https://www.google.com/search?q=${item.title}"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        holder.itemView.context.startActivity(intent) // 구글 검색 링크 열기
                     }
                 }
             }
         }
 
+        // RecyclerView 아이템 개수 반환ㄴ
         override fun getItemCount() = items.size
 
-        fun submitBooks(books: List<Book>) {
-            items.add("Find Book") // 책 섹션 제목 추가
-            items.addAll(books)
-            notifyDataSetChanged()
-        }
+        // 데이터 교차 배치 후 RecyclerView 업데이트
+        fun submitData(books: List<Book>, videos: List<YoutubeVideo>) {
+            items.clear()
 
-        fun submitVideos(videos: List<YoutubeVideo>) {
-            val emotionText = when (videos.first().emotionCategory) {
-                1 -> "How about this music when you're happy?"
-                2 -> "How about this music when you're excited?"
-                3 -> "How about this music when you're feeling so-so?"
-                4 -> "How about this music when you're sad?"
-                5 -> "How about this music when you're angry?"
-                6 -> "How about this music when you're tired?"
-                else -> "Music recommendation"
+            // 음악과 책 데이터를 교차 배치
+            for (i in 0 until 6) { // 음악은 항상 6개
+                // 1. 음악 추가
+                val video = videos[i]
+                val emotionText = when (video.emotionCategory) { // emotionCategory에 따라 질문 텍스트 설정
+                    1 -> "How about this music when you're happy?"
+                    2 -> "How about this music when you're excited?"
+                    3 -> "How about this music when you're feeling so-so?"
+                    4 -> "How about this music when you're sad?"
+                    5 -> "How about this music when you're angry?"
+                    6 -> "How about this music when you're tired?"
+                    else -> "How about this music?"
+                }
+                items.add(Pair(emotionText, video)) // 음악 데이터 추가
+
+                // 2. 책 추가 (책이 5개로 고정되었으므로 순환적으로 추가)
+                val bookIndex = i % books.size
+                val book = books[bookIndex]
+                items.add(book) // 책 데이터 추가
             }
-            items.add(emotionText) // 감정에 맞는 섹션 제목 추가
-            items.addAll(videos)
-            notifyDataSetChanged()
+
+            notifyDataSetChanged() // RecyclerView 갱신
         }
     }
-
 }

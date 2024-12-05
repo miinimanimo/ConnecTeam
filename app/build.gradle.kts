@@ -60,7 +60,7 @@ dependencies {
     //캘린더뷰 라이브러리
     implementation ("com.github.prolificinteractive:material-calendarview:2.0.1")
 
-
+    implementation("com.squareup.okhttp3:logging-interceptor:4.9.0")
     // 테스트 라이브러리
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

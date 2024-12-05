@@ -33,7 +33,9 @@ class LoginActivity : AppCompatActivity() {
     private fun loginUser(email: String, password: String) {
         val credentials = LoginCredentials(email, password)
 
-        val authApiService = RetrofitClient.instance
+        // excludeAuth = true로 설정하여 토큰이 없는 상태로 Retrofit 인스턴스를 가져옴
+        val authApiService = RetrofitClient.getAuthApiService(this)
+
         authApiService.login(credentials).enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
                 if (response.isSuccessful) {
@@ -41,8 +43,11 @@ class LoginActivity : AppCompatActivity() {
                     if (accessToken != null) {
                         // 토큰을 SharedPreferences에 저장
                         saveToken(accessToken)
+
                         // MainActivity로 이동
                         navigateToMainActivity()
+                    } else {
+                        Log.e("Login", "토큰이 없습니다.")
                     }
                 } else {
                     Log.e("Login", "로그인 실패: ${response.errorBody()?.string()}")
@@ -54,6 +59,7 @@ class LoginActivity : AppCompatActivity() {
             }
         })
     }
+
 
     private fun saveToken(token: String) {
         val sharedPreferences = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)

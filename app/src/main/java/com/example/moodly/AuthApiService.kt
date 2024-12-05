@@ -2,68 +2,15 @@ package com.example.moodly
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.POST
-import retrofit2.http.GET
-import retrofit2.http.Path
-import retrofit2.http.Header
 
 interface AuthApiService {
     @POST("auth/")  // Django의 로그인 URL 경로에 맞게 수정하세요.
     fun login(
         @Body credentials: LoginCredentials
     ): Call<LoginResponse>
-
-    @GET("main/diaries/{year}/{month}/")
-    fun getDiariesForMonth(
-        @Header("Authorization") token: String,
-        @Path("year") year: Int,
-        @Path("month") month: Int
-    ): Call<DaysResponse>
-
-    @GET("main/diaries/{year}/{month}/{day}/")
-    fun getDiariesForDay(
-        @Header("Authorization") token: String,
-        @Path("year") year: Int,
-        @Path("month") month: Int,
-        @Path("day") day: Int
-    ): Call<List<DayDiary>>
-
-    @GET("main/books")
-    fun getBooks(@Header("Authorization") token: String): Call<List<Book>>
-
-    @GET("main/youtube-videos")
-    fun getYoutubeVideos(@Header("Authorization") token: String): Call<List<YoutubeVideo>>
 }
 
-// 책 정보를 위한 데이터 클래스
-data class Book(
-    val rank: Int,
-    val title: String,
-    val bookClass: String
-)
-
-// 음악 정보를 위한 데이터 클래스
-data class YoutubeVideo(
-    val title: String,
-    val link: String,
-    val emotionCategory: Int
-)
-
-// 새로운 데이터 클래스들 <-여기 합칠때 좀 잘 봐야할거같은데 이모션 ....ㅠㅠㅠㅠ
-data class DayDiary(
-    val title: String,
-    val emotion_categories: List<EmotionCategory>
-)
-
-data class EmotionCategory(
-    val id: Int,
-    val name: String
-)
-
-// 서버 응답을 위한 데이터 클래스
-data class DaysResponse(
-    val days: List<Int>  // [17, 22] 와 같은 형식으로 받을 수 있도록
-)
-
+// 로그인 요청에 사용할 데이터 클래스 정의
 // 로그인 요청에 사용할 데이터 클래스 정의
 data class LoginCredentials(
     val email: String,
