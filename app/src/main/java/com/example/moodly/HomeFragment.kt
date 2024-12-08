@@ -18,6 +18,7 @@ import androidx.navigation.NavOptions
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.moodly.databinding.FragmentHomeBinding
+import com.example.moodly.databinding.ItemRecommendationBinding
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView
 import com.prolificinteractive.materialcalendarview.CalendarDay
 import com.prolificinteractive.materialcalendarview.DayViewDecorator
@@ -313,82 +314,77 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // 새로운 어댑터 클래스 추가
     class RecommendationAdapter : RecyclerView.Adapter<RecommendationAdapter.ViewHolder>() {
+        private val items = mutableListOf<Any>()
 
-        // 음악(질문 + YoutubeVideo)와 책(Book) 데이터를 담는 리스트
-        private val items = mutableListOf<Any>() // Pair<String, YoutubeVideo> 또는 Book
+        inner class ViewHolder(private val binding: ItemRecommendationBinding) : RecyclerView.ViewHolder(binding.root) {
+            fun bind(item: Any) {
+                when (item) {
+                    is Pair<*, *> -> { // 음악 추천
+                        val video = item.second as YoutubeVideo
+                        val emotion = item.first as Int  // 하드코딩된 감정 번호
 
-        // ViewHolder 정의
-        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val titleText: TextView = itemView.findViewById(R.id.titleText)
-            val subtitleText: TextView = itemView.findViewById(R.id.subtitleText)
-        }
-
-        // ViewHolder 생성
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_recommendation, parent, false)
-            return ViewHolder(view)
-        }
-
-        // ViewHolder 데이터 바인딩
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
-            when (item) {
-                is Pair<*, *> -> { // 음악 추천
-                    val question = item.first as String
-                    val video = item.second as YoutubeVideo
-                    holder.titleText.text = question // 질문 텍스트 설정
-                    holder.subtitleText.text = "Listen to Music" // 버튼 텍스트
-                    holder.subtitleText.visibility = View.VISIBLE
-                    holder.itemView.setOnClickListener {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(video.link))
-                        holder.itemView.context.startActivity(intent) // 유튜브 링크 열기
+                        val (emotionText, emoji) = when (emotion) {
+                            1 -> "Happy" to "Happy 😊"
+                            2 -> "Excited" to "Excited 😎"
+                            3 -> "Soso" to "Soso 😐"
+                            4 -> "Sad" to "Sad 😕"
+                            5 -> "Angry" to "Angry 😠"
+                            6 -> "Tired" to "Tired 😪"
+                            else -> "Unknown" to "🎵"
+                        }
+                        binding.headerText.text = "$emoji"
+                        binding.titleText.text = "How about this music?"
+                        binding.subtitleText.text = "Listen to Music"
+                        binding.subtitleText.visibility = View.VISIBLE
+                        binding.root.setOnClickListener {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(video.link))
+                            itemView.context.startActivity(intent)
+                        }
                     }
-                }
-                is Book -> { // 책 추천
-                    holder.titleText.text = item.title // 책 제목 설정
-                    holder.subtitleText.text = "Find Book" // 버튼 텍스트
-                    holder.subtitleText.visibility = View.VISIBLE
-                    holder.itemView.setOnClickListener {
-                        val url = "https://www.google.com/search?q=${item.title}"
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        holder.itemView.context.startActivity(intent) // 구글 검색 링크 열기
+                    is Book -> { // 책 추천
+                        binding.headerText.text = "How about this book?"
+                        binding.titleText.text = item.title
+                        binding.subtitleText.text = "Find Book"
+                        binding.subtitleText.visibility = View.VISIBLE
+                        binding.root.setOnClickListener {
+                            val url = "https://www.google.com/search?q=${item.title}"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            itemView.context.startActivity(intent)
+                        }
                     }
                 }
             }
         }
 
-        // RecyclerView 아이템 개수 반환ㄴ
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val binding = ItemRecommendationBinding.inflate(
+                LayoutInflater.from(parent.context),
+                parent,
+                false
+            )
+            return ViewHolder(binding)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.bind(items[position])
+        }
+
         override fun getItemCount() = items.size
 
-        // 데이터 교차 배치 후 RecyclerView 업데이트
         fun submitData(books: List<Book>, videos: List<YoutubeVideo>) {
             items.clear()
+            // 각 감정별로 하나씩
+            for (i in 1..6) {
+                val video = videos[i-1]  // 비디오는 그대로 사용
+                // emotionCategory를 1부터 6까지 순서대로 지정
+                items.add(Pair(i, video))
 
-            // 음악과 책 데이터를 교차 배치
-            for (i in 0 until 6) { // 음악은 항상 6개
-                // 1. 음악 추가
-                val video = videos[i]
-                val emotionText = when (video.emotionCategory) { // emotionCategory에 따라 질문 텍스트 설정
-                    1 -> "How about this music when you're happy?"
-                    2 -> "How about this music when you're excited?"
-                    3 -> "How about this music when you're feeling so-so?"
-                    4 -> "How about this music when you're sad?"
-                    5 -> "How about this music when you're angry?"
-                    6 -> "How about this music when you're tired?"
-                    else -> "How about this music?"
-                }
-                items.add(Pair(emotionText, video)) // 음악 데이터 추가
-
-                // 2. 책 추가 (책이 5개로 고정되었으므로 순환적으로 추가)
-                val bookIndex = i % books.size
+                val bookIndex = (i-1) % books.size
                 val book = books[bookIndex]
-                items.add(book) // 책 데이터 추가
+                items.add(book)
             }
-
-            notifyDataSetChanged() // RecyclerView 갱신
+            notifyDataSetChanged()
         }
     }
 }
