@@ -41,7 +41,7 @@ interface MainApiService {
 
     //인스타 피드 리턴
     @GET("main/feed/")
-    fun getFeed(): Call<List<DiaryEntry>>
+    fun getFeed(): Call<DiaryResponse>
     //인스타 좋아요 개수
     @GET("main/diary/{diaryId}/like/count/")
     fun getLikeCount(@Path("diaryId") diaryId: Int): Call<LikeCountResponse>
@@ -115,4 +115,7 @@ data class LikeStatusResponse(
 )
 data class LikeCountResponse(
     val likes_count: Int
+)
+data class DiaryResponse(
+    val diaries: List<DiaryEntry>
 )
