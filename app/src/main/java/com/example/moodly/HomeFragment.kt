@@ -417,29 +417,40 @@ class HomeFragment : Fragment() {
             RecyclerView.ViewHolder(binding.root) {
             fun bind(item: Any) {
                 when (item) {
-                    is Pair<*, *> -> { // 음악 추천
+                    is Pair<*, *> -> {
                         val video = item.second as YoutubeVideo
-                        val emotion = item.first as Int  // 하드코딩된 감정 번호
+                        val emotion = item.first as Int
 
+                        // 이모지와 감정 설정하는 부분은 그대로 유지
                         val (emotionText, emoji) = when (emotion) {
-                            1 -> "Happy" to "Happy 😊"    // 웃는 얼굴
-                            2 -> "Excited" to "Excited 😎"  // 선글라스
-                            3 -> "Soso" to "Soso 😐"      // 무표정
-                            4 -> "Sad" to "Sad 😢"        // 눈물
-                            5 -> "Angry" to "Angry 😡"    // 빨간 화난 얼굴
-                            6 -> "Tired" to "Tired 😪"    // 졸린 얼굴
+                            1 -> "Happy" to "Happy 😊"
+                            2 -> "Excited" to "Excited 😎"
+                            3 -> "Soso" to "Soso 😐"
+                            4 -> "Sad" to "Sad 😢"
+                            5 -> "Angry" to "Angry 😡"
+                            6 -> "Tired" to "Tired 😪"
                             else -> "Unknown" to "🎵"
                         }
                         binding.headerText.text = "$emoji"
                         binding.titleText.text = "How about this music?"
                         binding.subtitleText.text = "Listen to Music"
                         binding.subtitleText.visibility = View.VISIBLE
+
+                        // 여기만 수정: 일반 브라우저로 열기
                         binding.root.setOnClickListener {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(video.link))
-                            itemView.context.startActivity(intent)
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW)
+                                intent.data = Uri.parse(video.link)
+                                itemView.context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(
+                                    itemView.context,
+                                    "Unable to open link",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
-
                     is Book -> { // 책 추천
                         binding.headerText.text = "How about this book?"
                         binding.titleText.text = item.title
