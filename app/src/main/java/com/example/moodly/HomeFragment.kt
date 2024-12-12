@@ -9,16 +9,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
 import android.widget.TextView
+import android.graphics.Rect
 import android.widget.Toast
 import android.content.Intent
 import android.net.Uri
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.NavOptions
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.moodly.databinding.FragmentHomeBinding
 import com.example.moodly.databinding.ItemRecommendationBinding
+import com.example.moodly.databinding.ItemDiaryBinding
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView
 import com.prolificinteractive.materialcalendarview.CalendarDay
 import com.prolificinteractive.materialcalendarview.DayViewDecorator
@@ -81,7 +84,8 @@ class HomeFragment : Fragment() {
 
     private fun setupRecommendationRecyclerView() {
         binding.recommendationsRecyclerView.apply {
-            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            layoutManager =
+                LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
             adapter = recommendationAdapter
         }
     }
@@ -98,7 +102,10 @@ class HomeFragment : Fragment() {
                     if (response.isSuccessful) {
                         loadedBooks = response.body()
                         if (loadedVideos != null) {
-                            recommendationAdapter.submitData(loadedBooks ?: listOf(), loadedVideos!!)
+                            recommendationAdapter.submitData(
+                                loadedBooks ?: listOf(),
+                                loadedVideos!!
+                            )
                         }
                     }
                 }
@@ -111,11 +118,17 @@ class HomeFragment : Fragment() {
         // 유튜브 비디오 데이터 로드
         mainApiService.getYoutubeVideos()
             .enqueue(object : Callback<List<YoutubeVideo>> {
-                override fun onResponse(call: Call<List<YoutubeVideo>>, response: Response<List<YoutubeVideo>>) {
+                override fun onResponse(
+                    call: Call<List<YoutubeVideo>>,
+                    response: Response<List<YoutubeVideo>>
+                ) {
                     if (response.isSuccessful) {
                         loadedVideos = response.body()
                         if (loadedBooks != null) {
-                            recommendationAdapter.submitData(loadedBooks!!, loadedVideos ?: listOf())
+                            recommendationAdapter.submitData(
+                                loadedBooks!!,
+                                loadedVideos ?: listOf()
+                            )
                         }
                     }
                 }
@@ -130,6 +143,23 @@ class HomeFragment : Fragment() {
         binding.diaryRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = diaryAdapter
+
+            // 스크롤 설정 변경
+            isNestedScrollingEnabled = false  // NestedScrollView 내부에서는 false로 설정
+
+            // 아이템 간격 설정은 유지
+            if (itemDecorationCount == 0) {
+                addItemDecoration(object : RecyclerView.ItemDecoration() {
+                    override fun getItemOffsets(
+                        outRect: Rect,
+                        view: View,
+                        parent: RecyclerView,
+                        state: RecyclerView.State
+                    ) {
+                        outRect.bottom = (12 * resources.displayMetrics.density).toInt()
+                    }
+                })
+            }
         }
     }
 
@@ -139,35 +169,40 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupCalendar() {
-        // 현재 날짜로 초기화할 때는 Calendar가 0-based이므로 +1 필요
         val currentDate = Calendar.getInstance()
+
+        // 달력 초기화 시
         fetchDiariesForMonth(
             currentDate.get(Calendar.YEAR),
-            currentDate.get(Calendar.MONTH) + 1
+            currentDate.get(Calendar.MONTH) + 1  // Calendar는 0-based라서 +1 필요
         )
 
-        // MaterialCalendarView에서 받은 month에는 +1할 필요 없음 (이미 보정되어 있음)
-        binding.calendarView.setOnMonthChangedListener { widget, date ->
-            fetchDiariesForMonth(date.year, date.month)
+        // 월 변경 리스너
+        binding.calendarView.setOnMonthChangedListener { _, date ->
+            fetchDiariesForMonth(
+                date.year,
+                date.month  // MaterialCalendarView는 이미 정확한 월을 주므로 변환 불필요
+            )
         }
 
-        binding.calendarView.setOnDateChangedListener { widget, date, selected ->
+        // 날짜 선택 리스너
+        binding.calendarView.setOnDateChangedListener { _, date, selected ->
             if (selected) {
-                fetchDiariesForDay(date.year, date.month, date.day)
+                fetchDiariesForDay(
+                    date.year,
+                    date.month,  // 여기도 변환 불필요
+                    date.day
+                )
             }
         }
     }
 
     private fun fetchDiariesForMonth(year: Int, month: Int) {
-        // MainApiService를 가져와서 사용
         val mainApiService = RetrofitClient.getMainApiService(requireContext())
 
         mainApiService.getDiariesForMonth(year, month)
             .enqueue(object : Callback<DaysResponse> {
-                override fun onResponse(
-                    call: Call<DaysResponse>,
-                    response: Response<DaysResponse>
-                ) {
+                override fun onResponse(call: Call<DaysResponse>, response: Response<DaysResponse>) {
                     if (response.isSuccessful) {
                         response.body()?.let { daysResponse ->
                             highlightDiaryDates(year, month, daysResponse.days)
@@ -182,38 +217,71 @@ class HomeFragment : Fragment() {
     }
 
     private fun fetchDiariesForDay(year: Int, month: Int, day: Int) {
-        // MainApiService를 가져와서 사용
         val mainApiService = RetrofitClient.getMainApiService(requireContext())
 
         mainApiService.getDiariesForDay(year, month, day)
             .enqueue(object : Callback<List<DayDiary>> {
-                override fun onResponse(
-                    call: Call<List<DayDiary>>,
-                    response: Response<List<DayDiary>>
-                ) {
-                    if (response.isSuccessful) {
-                        response.body()?.let { diaries ->
-                            binding.contentCard.visibility = View.VISIBLE
-                            if (diaries.isEmpty()) {
-                                // 일기가 없는 경우
-                                binding.emptyDiaryText.visibility = View.VISIBLE
-                                binding.diaryRecyclerView.visibility = View.GONE
-                            } else {
-                                // 일기가 있는 경우
-                                binding.emptyDiaryText.visibility = View.GONE
-                                binding.diaryRecyclerView.visibility = View.VISIBLE
-                                diaryAdapter.updateDiaries(diaries)
+                override fun onResponse(call: Call<List<DayDiary>>, response: Response<List<DayDiary>>) {
+                    // 서버 응답 전체를 로깅
+                    Log.d("API Response", "Raw response code: ${response.code()}")
+                    Log.d("API Response", "Raw response headers: ${response.headers()}")
+                    Log.d("API Response", "Raw response body: ${response.body()}")
+
+                    try {
+                        if (response.isSuccessful && isAdded) {
+                            response.body()?.let { diaries ->
+                                // 각 일기 항목의 세부 정보를 로깅
+                                diaries.forEach { diary ->
+                                    Log.d("API Response", """
+                                    Diary Details:
+                                    - Title: ${diary.title}
+                                    - Emotion Category: ${diary.emotion_categories}
+                                    - Raw Data: $diary
+                                """.trimIndent())
+                                }
+
+                                binding.contentCard.visibility = View.VISIBLE
+                                if (diaries.isEmpty()) {
+                                    binding.emptyDiaryText.visibility = View.VISIBLE
+                                    binding.diaryRecyclerView.visibility = View.GONE
+                                    com.google.android.material.snackbar.Snackbar.make(
+                                        binding.root,
+                                        "No diary entries for this date",
+                                        1500
+                                    ).show()
+                                } else {
+                                    binding.emptyDiaryText.visibility = View.GONE
+                                    binding.diaryRecyclerView.visibility = View.VISIBLE
+                                    diaryAdapter.updateDiaries(diaries)
+                                }
                             }
+                        } else {
+                            // 실패한 응답의 에러 본문도 로깅
+                            Log.e("API Response", "Error body: ${response.errorBody()?.string()}")
                         }
+                    } catch (e: Exception) {
+                        Log.e("Diary", "Error processing diary response", e)
+                        Log.e("Diary", "Stack trace:", e)
+                        showErrorMessage()
                     }
                 }
 
                 override fun onFailure(call: Call<List<DayDiary>>, t: Throwable) {
                     Log.e("Diary", "Failed to fetch diaries", t)
-                    binding.contentCard.visibility = View.VISIBLE
-                    binding.emptyDiaryText.text = "Failed to load diaries"
-                    binding.emptyDiaryText.visibility = View.VISIBLE
-                    binding.diaryRecyclerView.visibility = View.GONE
+                    Log.e("Diary", "Error message: ${t.message}")
+                    Log.e("Diary", "Stack trace:", t)
+                    if (isAdded) {
+                        showErrorMessage()
+                    }
+                }
+
+                private fun showErrorMessage() {
+                    binding.contentCard.visibility = View.GONE
+                    com.google.android.material.snackbar.Snackbar.make(
+                        binding.root,
+                        "Failed to load diaries",
+                        1500
+                    ).show()
                 }
             })
     }
@@ -221,11 +289,16 @@ class HomeFragment : Fragment() {
     private fun highlightDiaryDates(year: Int, month: Int, days: List<Int>) {
         binding.calendarView.removeDecorators()
 
+        Log.d("Calendar", "Highlighting dates for $year/$month: $days")
+
         val decorator = object : DayViewDecorator {
             override fun shouldDecorate(day: CalendarDay): Boolean {
-                return day.year == year &&
-                        day.month == month - 1 && // MaterialCalendarView는 0-based month를 사용
+                val shouldDecorate = day.year == year &&
+                        day.month == month &&
                         days.contains(day.day)
+
+                Log.d("Calendar", "Checking date ${day.year}/${day.month}/${day.day}: $shouldDecorate")
+                return shouldDecorate
             }
 
             override fun decorate(view: DayViewFacade) {
@@ -253,14 +326,20 @@ class HomeFragment : Fragment() {
                         .setPopUpTo(R.id.homeFragment, true)
                         .setLaunchSingleTop(true)
                         .build()
-                    navController.navigate(R.id.action_homeFragment_to_profileFragment, null, navOptions)
+                    navController.navigate(
+                        R.id.action_homeFragment_to_profileFragment,
+                        null,
+                        navOptions
+                    )
                     true
                 }
+
                 R.id.menu_logout -> {
                     findNavController().navigate(R.id.action_homeFragment_to_loginActivity)
                     Toast.makeText(requireContext(), "Logged out.", Toast.LENGTH_SHORT).show()
                     true
                 }
+
                 R.id.menu_contact -> {
                     AlertDialog.Builder(requireContext())
                         .setTitle("회사 Contact")
@@ -269,6 +348,7 @@ class HomeFragment : Fragment() {
                         .show()
                     true
                 }
+
                 else -> false
             }
         }
@@ -278,32 +358,47 @@ class HomeFragment : Fragment() {
     inner class DiaryAdapter : RecyclerView.Adapter<DiaryAdapter.DiaryViewHolder>() {
         private var diaries: List<DayDiary> = listOf()
 
-        inner class DiaryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val titleText: TextView = itemView.findViewById(R.id.titleText)
-            val emotionText: TextView = itemView.findViewById(R.id.emotionText)
+        inner class DiaryViewHolder(private val binding: ItemDiaryBinding) :
+            RecyclerView.ViewHolder(binding.root) {
+
+            fun bind(diary: DayDiary) {
+                binding.root.setOnClickListener {
+                    val bundle = Bundle().apply {
+                        putInt("diaryId", diary.id)
+                    }
+                    itemView.findNavController().navigate(
+                        R.id.action_homeFragment_to_diaryFragment,
+                        bundle
+                    )
+                }
+                binding.titleText.text = diary.title
+
+                // 단일 감정 이모티콘
+                val emoticon = when (diary.emotion_category) {
+                        1 -> "😊"  // Happy
+                        2 -> "😎"  // Excited
+                        3 -> "😐"  // Soso (무표정)
+                        4 -> "😢"  // Sad
+                        5 -> "😡"  // Angry (빨간 화난 얼굴)
+                        6 -> "😪"  // Tired
+                        else -> "😐"
+                    }
+                binding.emotionText.text = emoticon
+                Log.d("DiaryAdapter", "Diary: title=${diary.title}, emotion=${diary.emotion_category}")
+            }
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DiaryViewHolder {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_diary, parent, false)
-            return DiaryViewHolder(view)
+            val binding = ItemDiaryBinding.inflate(
+                LayoutInflater.from(parent.context),
+                parent,
+                false
+            )
+            return DiaryViewHolder(binding)
         }
 
         override fun onBindViewHolder(holder: DiaryViewHolder, position: Int) {
-            val diary = diaries[position]
-            holder.titleText.text = diary.title
-            val emoticons = diary.emotion_categories.map { emotion ->
-                when (emotion.name) {
-                    "Happy" -> "😊"
-                    "Excited" -> "😎"
-                    "Soso" -> "😐"
-                    "Sad" -> "😕"
-                    "Angry" -> "😠"
-                    "Tired" -> "😪"
-                    else -> ""
-                }
-            }
-            holder.emotionText.text = emoticons.joinToString(" ")
+            holder.bind(diaries[position])
         }
 
         override fun getItemCount() = diaries.size
@@ -314,10 +409,12 @@ class HomeFragment : Fragment() {
         }
     }
 
+
     class RecommendationAdapter : RecyclerView.Adapter<RecommendationAdapter.ViewHolder>() {
         private val items = mutableListOf<Any>()
 
-        inner class ViewHolder(private val binding: ItemRecommendationBinding) : RecyclerView.ViewHolder(binding.root) {
+        inner class ViewHolder(private val binding: ItemRecommendationBinding) :
+            RecyclerView.ViewHolder(binding.root) {
             fun bind(item: Any) {
                 when (item) {
                     is Pair<*, *> -> { // 음악 추천
@@ -325,12 +422,12 @@ class HomeFragment : Fragment() {
                         val emotion = item.first as Int  // 하드코딩된 감정 번호
 
                         val (emotionText, emoji) = when (emotion) {
-                            1 -> "Happy" to "Happy 😊"
-                            2 -> "Excited" to "Excited 😎"
-                            3 -> "Soso" to "Soso 😐"
-                            4 -> "Sad" to "Sad 😕"
-                            5 -> "Angry" to "Angry 😠"
-                            6 -> "Tired" to "Tired 😪"
+                            1 -> "Happy" to "Happy 😊"    // 웃는 얼굴
+                            2 -> "Excited" to "Excited 😎"  // 선글라스
+                            3 -> "Soso" to "Soso 😐"      // 무표정
+                            4 -> "Sad" to "Sad 😢"        // 눈물
+                            5 -> "Angry" to "Angry 😡"    // 빨간 화난 얼굴
+                            6 -> "Tired" to "Tired 😪"    // 졸린 얼굴
                             else -> "Unknown" to "🎵"
                         }
                         binding.headerText.text = "$emoji"
@@ -342,6 +439,7 @@ class HomeFragment : Fragment() {
                             itemView.context.startActivity(intent)
                         }
                     }
+
                     is Book -> { // 책 추천
                         binding.headerText.text = "How about this book?"
                         binding.titleText.text = item.title
@@ -376,11 +474,11 @@ class HomeFragment : Fragment() {
             items.clear()
             // 각 감정별로 하나씩
             for (i in 1..6) {
-                val video = videos[i-1]  // 비디오는 그대로 사용
+                val video = videos[i - 1]  // 비디오는 그대로 사용
                 // emotionCategory를 1부터 6까지 순서대로 지정
                 items.add(Pair(i, video))
 
-                val bookIndex = (i-1) % books.size
+                val bookIndex = (i - 1) % books.size
                 val book = books[bookIndex]
                 items.add(book)
             }

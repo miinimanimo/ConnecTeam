@@ -45,6 +45,18 @@
         android:name="com.example.moodly.LoginActivity"
         android:label="Login"
         tools:layout="@layout/activity_login"/>
+    <fragment
+        android:id="@+id/diaryFragment"
+        android:name="com.example.moodly.DiaryFragment"
+        android:label="DiaryFragment">
+        <argument
+            android:name="diaryId"
+            app:argType="integer" />
+    </fragment>
+
+    <action
+        android:id="@+id/action_homeFragment_to_diaryFragment"
+        app:destination="@id/diaryFragment" />
 
     <action
         android:id="@+id/action_homeFragment_to_expressFragment"

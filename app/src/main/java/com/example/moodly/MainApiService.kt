@@ -38,16 +38,34 @@ interface MainApiService {
         @Part("longitude") longitude: RequestBody,
         @Part("brightness") brightness: RequestBody
     ): Call<DiaryEntry>
-}
 
+    //인스타 피드 리턴
+    @GET("main/feed/")
+    fun getFeed(): Call<List<DiaryEntry>>
+    //인스타 좋아요 개수
+    @GET("main/diary/{diaryId}/like/count/")
+    fun getLikeCount(@Path("diaryId") diaryId: Int): Call<LikeCountResponse>
+
+    @POST("main/diary/{diaryId}/like/")
+    fun toggleLike(@Path("diaryId") diaryId: Int): Call<LikeResponse>
+
+    @GET("main/diary/{diaryId}/like/status/")
+    fun getLikeStatus(@Path("diaryId") diaryId: Int): Call<LikeStatusResponse>
+
+    @GET("main/diaries/{diaryId}/")
+    fun getDiaryDetails(@Path("diaryId") diaryId: Int): Call<DiaryEntry>
+
+}
 // 데이터 클래스들
 data class DaysResponse(
     val days: List<Int>
 )
 
 data class DayDiary(
+    val id: Int,
     val title: String,
-    val emotion_categories: List<EmotionCategory>
+    val emotion_category: Int?, // 단일 감정으로 변경
+    val emotion_categories: List<EmotionCategory>? = null
 )
 
 data class EmotionCategory(
@@ -66,13 +84,35 @@ data class YoutubeVideo(
     val link: String,
     val emotionCategory: Int
 )
-
+// DiaryEntry 데이터 클래스 수정
 data class DiaryEntry(
-    val title: String,
-    val content: String,
-    val emotion_category: Int,
-    val image: String?,
-    val latitude: Double,
-    val longitude: Double,
-    val brightness: Int
+    val id: Int,
+    val user: Int,// 일기 고유 ID
+    val title: String,          // 일기 제목
+    val content: String,        // 일기 내용
+    val emotion_category: Int,  // 감정 카테고리
+    val image: String?,         // base64로 인코딩된 이미지
+    val latitude: Double,       // 위도
+    val longitude: Double,      // 경도
+    val brightness: Int,        // 밝기
+    val created_at: String,      // 작성 시간
+    val updated_at: String,
+)
+
+data class LikeResponse(
+    val message: String,
+    val data: LikeData
+)
+
+data class LikeData(
+    val diary: Int,
+    val user: Int,
+    val count: Int
+)
+
+data class LikeStatusResponse(
+    val user_liked: Boolean
+)
+data class LikeCountResponse(
+    val likes_count: Int
 )
