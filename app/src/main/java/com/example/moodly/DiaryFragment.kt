@@ -87,64 +87,43 @@ class DiaryFragment : Fragment() {
             diaryText.text = diary.content
 
             if (!diary.image.isNullOrEmpty()) {
-                try {
-                    // 원본 URL에서 이미지 파일명 추출
-                    val originalUrl = diary.image
-                    val fileName = originalUrl.substringAfterLast("/")
+                diaryImage.visibility = View.VISIBLE
 
-                    // 실제 서버 저장 경로 구성
-                    val imageUrl = "http://127.0.0.1:8000/home/mop/media/diary_images/diary_images/${diary.user}/$fileName"
+                Glide.with(requireContext())
+                    .load(diary.image) // 수정된 Django에서 절대 URL 제공
+                    .centerCrop()
+                    .error(android.R.drawable.ic_dialog_alert)
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .listener(object : RequestListener<Drawable> {
+                        override fun onLoadFailed(
+                            e: GlideException?,
+                            model: Any?,
+                            target: Target<Drawable>,
+                            isFirstResource: Boolean
+                        ): Boolean {
+                            Log.e("DiaryFragment", "Image load failed for URL: ${diary.image}")
+                            Log.e("DiaryFragment", "Error details: ${e?.rootCauses?.joinToString("\n")}")
 
-                    Log.d("DiaryFragment", "Original image URL: $originalUrl")
-                    Log.d("DiaryFragment", "Constructed image URL: $imageUrl")
+                            Snackbar.make(
+                                binding.root,
+                                "이미지를 불러오는데 실패했습니다",
+                                Snackbar.LENGTH_SHORT
+                            ).show()
+                            return false
+                        }
 
-                    diaryImage.visibility = View.VISIBLE
-
-                    Glide.with(requireContext())
-                        .load(imageUrl)
-                        .centerCrop()
-                        .error(android.R.drawable.ic_dialog_alert)
-                        .placeholder(android.R.drawable.ic_menu_gallery)
-                        .listener(object : RequestListener<Drawable> {
-                            override fun onLoadFailed(
-                                e: GlideException?,
-                                model: Any?,
-                                target: Target<Drawable>,
-                                isFirstResource: Boolean
-                            ): Boolean {
-                                Log.e("DiaryFragment", "Image load failed for URL: $imageUrl")
-                                Log.e("DiaryFragment", "Error details: ${e?.rootCauses?.joinToString("\n")}")
-
-                                Snackbar.make(
-                                    binding.root,
-                                    "이미지를 불러오는데 실패했습니다",
-                                    Snackbar.LENGTH_SHORT
-                                ).show()
-                                return false
-                            }
-
-                            override fun onResourceReady(
-                                resource: Drawable,
-                                model: Any,
-                                target: Target<Drawable>,
-                                dataSource: DataSource,
-                                isFirstResource: Boolean
-                            ): Boolean {
-                                Log.d("DiaryFragment", "Image loaded successfully from: $imageUrl")
-                                return false
-                            }
-                        })
-                        .into(diaryImage)
-
-                } catch (e: Exception) {
-                    Log.e("DiaryFragment", "Error processing image URL: ${e.message}", e)
-                    diaryImage.visibility = View.GONE
-                    Snackbar.make(
-                        binding.root,
-                        "이미지 처리 중 오류가 발생했습니다",
-                        Snackbar.LENGTH_SHORT
-                    ).show()
-                }
+                        override fun onResourceReady(
+                            resource: Drawable,
+                            model: Any,
+                            target: Target<Drawable>,
+                            dataSource: DataSource,
+                            isFirstResource: Boolean
+                        ): Boolean {
+                            Log.d("DiaryFragment", "Image loaded successfully from: ${diary.image}")
+                            return false
+                        }
+                    })
+                    .into(diaryImage)
             } else {
                 diaryImage.visibility = View.GONE
             }
