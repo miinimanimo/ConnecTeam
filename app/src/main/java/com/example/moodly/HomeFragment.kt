@@ -1,6 +1,7 @@
 package com.example.moodly
 
 import android.app.AlertDialog
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -12,7 +13,9 @@ import android.widget.TextView
 import android.graphics.Rect
 import android.widget.Toast
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.NavOptions
@@ -40,6 +43,8 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
     private val diaryAdapter = DiaryAdapter()
     private val recommendationAdapter = RecommendationAdapter()
+
+    private lateinit var shakeReceiver: BroadcastReceiver
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -71,6 +76,22 @@ class HomeFragment : Fragment() {
             showPopupMenu(it)
         }
 
+        // BroadcastReceiver 등록 (흔들림 감지 후 처리)
+        shakeReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent != null && intent.action == "com.example.moodly.SHAKE_DETECTED") {
+                    Log.d("HomeFragment", "Shake detected! Navigating to ExpressFragment.")
+                    findNavController().navigate(R.id.action_homeFragment_to_expressFragment)
+                }
+            }
+        }
+
+        // BroadcastReceiver 등록
+        requireActivity().registerReceiver(shakeReceiver, IntentFilter("com.example.moodly.SHAKE_DETECTED"))
+
+        // 흔들림 감지 서비스 시작
+        startShakeService()
+
         // RecyclerView 설정
         setupRecyclerView()
 
@@ -80,6 +101,16 @@ class HomeFragment : Fragment() {
         // 추천 데이터 로드
         loadRecommendations()
 
+    }
+
+    // 흔들림 감지 서비스 시작
+    private fun startShakeService() {
+        val serviceIntent = Intent(requireContext(), ShakeService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireContext().startForegroundService(serviceIntent)
+        } else {
+            requireContext().startService(serviceIntent)
+        }
     }
 
     private fun setupRecommendationRecyclerView() {
@@ -312,6 +343,7 @@ class HomeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        requireActivity().unregisterReceiver(shakeReceiver)
     }
 
     private fun showPopupMenu(anchor: View) {
@@ -508,5 +540,6 @@ class HomeFragment : Fragment() {
             }
             notifyDataSetChanged()
         }
+
     }
 }

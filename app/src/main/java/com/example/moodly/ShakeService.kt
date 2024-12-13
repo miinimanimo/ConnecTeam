@@ -20,7 +20,7 @@ class ShakeService : Service(), SensorEventListener {
 
     private var lastShakeTime: Long = 0
     private var shakeCount = 0
-    private val shakeThreshold = 2.0f // 흔들림 감도 (m/s²)
+    private val shakeThreshold = 7.0f // 흔들림 감도 (m/s²)
     private val timeThreshold = 500   // 두 흔들림 간 최소 간격 (ms)
     private val shakeCountThreshold = 3  // 최소 흔들림 횟수
 
