@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.moodly.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/expressFragment"
+        android:name="com.example.moodly.ExpressFragment"
+        android:label="Express"
+        tools:layout="@layout/fragment_express" />
+
+    <fragment
+        android:id="@+id/mapFragment"
+        android:name="com.example.moodly.MapFragment"
+        android:label="Map"
+        tools:layout="@layout/fragment_map" />
+
+    <fragment
+        android:id="@+id/chatbotFragment"
+        android:name="com.example.moodly.ChatbotFragment"
+        android:label="Chatbot"
+        tools:layout="@layout/activity_chat_bot" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.moodly.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/savedDiaryListFragment"
+        android:name="com.example.moodly.SavedDiaryListFragment"
+        android:label="SavedDiary"
+        tools:layout="@layout/fragment_saved_diary" />
+    <fragment
+        android:id="@+id/savedDiaryFragment"
+        android:name="com.example.moodly.SavedDiaryFragment"
+        android:label="SavedDiary"
+        tools:layout="@layout/fragment_saved_diary" />
+    <fragment
+        android:id="@+id/myDiaryListFragment"
+        android:name="com.example.moodly.DiaryListFragment"
+        android:label="My Diary List" />
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.example.moodly.DashboardFragment"
+        android:label="My Dashboard"
+        tools:layout="@layout/fragment_dashboard" />
+
+    <activity
+        android:id="@+id/loginActivity"
+        android:name="com.example.moodly.LoginActivity"
+        android:label="Login"
+        tools:layout="@layout/activity_login"/>
+    <fragment
+        android:id="@+id/diaryFragment"
+        android:name="com.example.moodly.DiaryFragment"
+        android:label="DiaryFragment">
+        <argument
+            android:name="diaryId"
+            app:argType="integer" />
+    </fragment>
+
+    <action
+        android:id="@+id/action_homeFragment_to_diaryFragment"
+        app:destination="@id/diaryFragment" />
+
+    <action
+        android:id="@+id/action_homeFragment_to_expressFragment"
+        app:destination="@id/expressFragment" />
+
+    <action
+        android:id="@+id/action_homeFragment_to_profileFragment"
+        app:destination="@id/profileFragment" />
+
+    <action
+        android:id="@+id/action_homeFragment_to_loginActivity"
+        app:destination="@id/loginActivity" />
+
+    <action
+        android:id="@+id/action_expressFragment_to_savedDiaryFragment"
+        app:destination="@id/savedDiaryFragment" />
+
+    <action
+        android:id="@+id/action_savedDiaryFragment_to_homeFragment"
+        app:destination="@id/homeFragment" />
+
+    <action
+        android:id="@+id/action_homeFragment_to_myDiaryListFragment"
+        app:destination="@id/myDiaryListFragment" />
+    <action
+        android:id="@+id/action_diaryListFragment_to_savedDiaryListFragment"
+        app:destination="@id/savedDiaryListFragment" />
+    <action
+        android:id="@+id/action_homeFragment_to_dashboardFragment"
+        app:destination="@id/dashboardFragment" />
+
+</navigation>
+

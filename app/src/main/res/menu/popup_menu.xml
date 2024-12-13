@@ -1,0 +1,15 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/menu_logout"
+        android:title="Log out" />
+    <item
+        android:id="@+id/menu_contact"
+        android:title="Contact" />
+    <item
+        android:id="@+id/menu_dashboard"
+        android:title="Dashboard" /> <!-- Dashboard 항목 추가 -->
+    <item
+        android:id="@+id/menu_my_diary_list"
+        android:title="My Diary List" /> <!-- My Diary List 항목 추가 -->
+</menu>
